@@ -1,0 +1,49 @@
+[tool.poetry]
+name = "django-valkey"
+version = "0.0.1"
+license = "BSD-3-Caluse"
+description = "a valkey backend for django, forked from django-redis"
+authors = ["amirreza <amir.rsf1380@gmail.com>"]
+readme = "README.rst"
+
+[tool.poetry.dependencies]
+python = ">= 3.10"
+django = ">= 3.2.9"
+valkey = "^6.0.0"
+
+libvalkey = { optional = true, version = "^4.0.0" }
+lz4 = { optional = true, version = "^4.3.3" }
+pyzstd = { optional = true, version = "^0.16.1"}
+
+[tool.poetry.extras]
+libvalkey = ["libvalkey"]
+lz4 = ["lz4"]
+pyzstd = ["pyzstd"]
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.8.0"
+ruff = "^0.6.3"
+mypy = "^1.11.2"
+django-stubs = "^5.0.4"
+lxml = "^5.3.0"
+pytest = "^8.3.2"
+pytest-django = "^4.8.0"
+pytest-mock = "^3.14.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+plugins = ["mypy_django_plugin.main"]
+pretty = true
+show_error_codes = true
+show_error_context = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unreachable = true
+
+[tool.django-stubs]
+django_settings_module = "tests.settings.sqlite"
+ignore_missing_settings = true
