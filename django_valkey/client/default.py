@@ -203,9 +203,10 @@ class DefaultClient:
                             # Obviously expire not existent value is noop.
                             return not self.has_key(key, version=version, client=client)
 
+                        # TODO: check if this is still valid
                         # valkey doesn't support negative timeouts in ex flags
                         # so it seems that it's better to just delete the key
-                        # than to set it and than expire in a pipeline
+                        # than to set it and then expire in a pipeline
                         return bool(self.delete(key, client=client, version=version))
 
                 return bool(client.set(nkey, nvalue, nx=nx, px=timeout, xx=xx))
@@ -358,7 +359,7 @@ class DefaultClient:
         client: Optional[Valkey] = None,
     ) -> bool:
         """
-        Set an expire flag on a ``key`` to ``when``, which can be represented
+        Set an expiry flag on a ``key`` to ``when``, which can be represented
         as an integer indicating unix time or a Python datetime object.
         """
         if client is None:
@@ -376,7 +377,7 @@ class DefaultClient:
         client: Optional[Valkey] = None,
     ) -> bool:
         """
-        Set an expire flag on a ``key`` to ``when``, which can be represented
+        Set an expiry flag on a ``key`` to ``when``, which can be represented
         as an integer indicating unix time or a Python datetime object.
         """
         if client is None:
@@ -677,7 +678,7 @@ class DefaultClient:
     ) -> Optional[int]:
         """
         Executes TTL valkey command and return the "time-to-live" of specified key.
-        If key is a non volatile key, it returns None.
+        If key is a non-volatile key, it returns None.
         """
         if client is None:
             client = self.get_client(write=False)
@@ -703,7 +704,7 @@ class DefaultClient:
     ) -> Optional[int]:
         """
         Executes PTTL valkey command and return the "time-to-live" of specified key.
-        If key is a non volatile key, it returns None.
+        If key is a non-volatile key, it returns None.
         """
         if client is None:
             client = self.get_client(write=False)

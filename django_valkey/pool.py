@@ -7,17 +7,7 @@ from django.utils.module_loading import import_string
 from valkey import Valkey
 from valkey.connection import ConnectionPool, DefaultParser
 from valkey.sentinel import Sentinel
-
-
-FALSE_STRINGS = ("0", "F", "FALSE", "N", "NO")
-
-
-def to_bool(value):
-    if value is None or value == "":
-        return None
-    if isinstance(value, str) and value.upper() in FALSE_STRINGS:
-        return False
-    return bool(value)
+from valkey._parsers.url_parser import to_bool
 
 
 class ConnectionFactory:
@@ -85,7 +75,7 @@ class ConnectionFactory:
 
     def disconnect(self, connection: Valkey) -> None:
         """
-        Given a not null client connection it disconnect from the Valkey server.
+        Given a not null client connection it disconnects from the Valkey server.
 
         The default implementation uses a pool to hold connections.
         """

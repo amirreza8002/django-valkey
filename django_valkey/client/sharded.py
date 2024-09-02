@@ -143,7 +143,7 @@ class ShardClient(DefaultClient):
     def ttl(self, key, version=None, client=None):
         """
         Executes TTL valkey command and return the "time-to-live" of specified key.
-        If key is a non volatile key, it returns None.
+        If key is a non-volatile key, it returns None.
         """
 
         if client is None:
@@ -155,7 +155,7 @@ class ShardClient(DefaultClient):
     def pttl(self, key, version=None, client=None):
         """
         Executes PTTL valkey command and return the "time-to-live" of specified key
-        in milliseconds. If key is a non volatile key, it returns None.
+        in milliseconds. If key is a non-volatile key, it returns None.
         """
 
         if client is None:
@@ -187,7 +187,7 @@ class ShardClient(DefaultClient):
 
     def pexpire_at(self, key, when: Union[datetime, int], version=None, client=None):
         """
-        Set an expire flag on a ``key`` to ``when`` on a shard client.
+        Set an expiry flag on a ``key`` to ``when`` on a shard client.
         ``when`` which can be represented as an integer indicating unix
         time or a Python datetime object.
         """
@@ -199,7 +199,7 @@ class ShardClient(DefaultClient):
 
     def expire_at(self, key, when: Union[datetime, int], version=None, client=None):
         """
-        Set an expire flag on a ``key`` to ``when`` on a shard client.
+        Set an expiry flag on a ``key`` to ``when`` on a shard client.
         ``when`` which can be represented as an integer indicating unix
         time or a Python datetime object.
         """
