@@ -6,7 +6,7 @@ description = "a valkey backend for django, forked from django-redis"
 authors = ["amirreza <amir.rsf1380@gmail.com>"]
 readme = "README.rst"
 classifiers = [
-    "Programmin Language :: Python",
+    "Programming Language :: Python",
     "Environment :: Web Environment",
     "Topic :: Utilities",
     "Intended Audience :: Developers",
