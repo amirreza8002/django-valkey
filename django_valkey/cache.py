@@ -44,7 +44,7 @@ class ValkeyCache(BaseCache):
         self._server = server
         self._params = params
         self._default_scan_itersize = getattr(
-            settings, "DJANGO_Valkey_SCAN_ITERSIZE", 10
+            settings, "DJANGO_VALKEY_SCAN_ITERSIZE", 10
         )
 
         options = params.get("OPTIONS", {})
