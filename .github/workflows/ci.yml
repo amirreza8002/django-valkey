@@ -1,0 +1,105 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.10'
+          - '3.11'
+          - '3.12'
+        django-version:
+          - '4.2'
+          - '5.0'
+          - '5.1'
+        valkey-version:
+          - 'latest'
+
+        # Only test pre-release dependencies for the latest Python.
+        include:
+          # Django 4.2 and python 3.8 with latest redis
+          - django-version: '4.2'
+            valkey-version: 'latest'
+            python-version: '3.8'
+
+          # Django 4.2 and python 3.9 with latest redis
+          - django-version: '4.2'
+            valkey-version: 'latest'
+            python-version: '3.9'
+
+          # latest Django with pre-release redis
+          - django-version: '5.0'
+            valkey-version: 'master'
+            python-version: '3.11'
+
+          # latest redis with pre-release Django
+          - django-version: 'main'
+            valkey-version: 'latest'
+            python-version: '3.12'
+
+          # pre-release Django and redis
+          - django-version: 'main'
+            valkey-version: 'master'
+            python-version: '3.11'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache
+        id: cached-poetry
+        uses: actions/cache@v4
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+
+      - name: Install poetry
+        if: steps.cached-poetry.outputs.cache-hit != 'true'
+        uses: abatilo/actions-poetry@v3
+
+      - name: install dependencies
+        run: poetry install --no-interaction --no-root  --all-extras --with dev
+
+      - name: config poetry
+        run: |
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+
+      - name: Install project
+        run: poetry install --no-interaction
+
+      - name: tests
+        run: |
+          VALKEY_PRIMARY=$(tests/start_valkey.sh)
+          VALKEY_SENTINEL=$(tests/start_valkey.sh --sentinel)
+          CONTAINERS="$VALKEY_PRIMARY $VALKEY_SENTINEL"
+          trap "docker stop $CONTAINERS && docker rm $CONTAINERS" EXIT
+          tests/wait_for_valkey.sh $VALKEY_PRIMARY 6379
+          tests/wait_for_valkey.sh $VALKEY_SENTINEL 26379
+
+          
+          poetry run pytest --ds=tests.settings.sqlite
+          poetry run pytest --ds=tests.settings.sqlite_herd
+          poetry run pytest --ds=tests.settings.sqlite_json
+          poetry run pytest --ds=tests.settings.sqlite_lz4
+          poetry run pytest --ds=tests.settings.sqlite_msgpack
+          poetry run pytest --ds=tests.settings.sqlite_sentinel
+          poetry run pytest --ds=tests.settings.sqlite_sentinel_opts
+          poetry run pytest --ds=tests.settings.sqlite_sharding
+          poetry run pytest --ds=tests.settings.sqlite_usock
+          poetry run pytest --ds=tests.settings.sqlite_zlib
+          poetry run pytest --ds=tests.settings.sqlite_zstd
+          poetry run pytest --ds=tests.settings.sqlite_gzip
+
+        env:
+          DJANGO: ${{ matrix.django-version }}
+          VALKEY: ${{ matrix.valkey-version }}
