@@ -5,6 +5,29 @@ license = "BSD-3-Caluse"
 description = "a valkey backend for django, forked from django-redis"
 authors = ["amirreza <amir.rsf1380@gmail.com>"]
 readme = "README.rst"
+classifiers = [
+    "Programmin Language :: Python",
+    "Environment :: Web Environment",
+    "Topic :: Utilities",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Framework :: Django :: 5.0",
+    "Framework :: Django :: 5.1",
+
+]
+
+[tool.poetry.urls]
+Homepage = "https://github.com/amirreza8002/django-valkey"
+Source = "https://github.com/amirreza8002/django-valkey"
+Issues = "https://github.com/amirreza8002/django-valkey/issues"
+
 
 [tool.poetry.dependencies]
 python = ">= 3.10"
@@ -14,6 +37,7 @@ valkey = "^6.0.0"
 libvalkey = { optional = true, version = "^4.0.0" }
 lz4 = { optional = true, version = "^4.3.3" }
 pyzstd = { optional = true, version = "^0.16.1"}
+
 
 [tool.poetry.extras]
 libvalkey = ["libvalkey"]
@@ -30,6 +54,9 @@ lxml = "^5.3.0"
 pytest = "^8.3.2"
 pytest-django = "^4.8.0"
 pytest-mock = "^3.14.0"
+tox = "^4.18.0"
+coverage = "^7.6.1"
+django-coverage-plugin = "^3.1.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -47,3 +74,9 @@ warn_unreachable = true
 [tool.django-stubs]
 django_settings_module = "tests.settings.sqlite"
 ignore_missing_settings = true
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings.sqlite"
+
+[tool.coverage.run]
+plugins = ["django_coverage_plugin"]
