@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "django-valkey"
-version = "0.0.1"
+version = "0.0.9"
 license = "BSD-3-Caluse"
 description = "a valkey backend for django, forked from django-redis"
 authors = ["amirreza <amir.rsf1380@gmail.com>"]
@@ -36,13 +36,15 @@ valkey = "^6.0.0"
 
 libvalkey = { optional = true, version = "^4.0.0" }
 lz4 = { optional = true, version = "^4.3.3" }
-pyzstd = { optional = true, version = "^0.16.1"}
+pyzstd = { optional = true, version = "^0.16.1" }
+msgpack = { optional = true, version = "^1.0.8" }
 
 
 [tool.poetry.extras]
 libvalkey = ["libvalkey"]
 lz4 = ["lz4"]
 pyzstd = ["pyzstd"]
+msgpack = ["msgpack"]
 
 
 [tool.poetry.group.dev.dependencies]
