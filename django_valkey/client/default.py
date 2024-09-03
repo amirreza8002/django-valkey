@@ -604,25 +604,24 @@ class DefaultClient:
                 # use lua script for atomicity
                 if not ignore_key_check:
                     lua = """
-                    local exists = valkey.call('EXISTS', KEYS[1])
+                    local exists = server.call('EXISTS', KEYS[1])
                     if (exists == 1) then
-                        return valkey.call('INCRBY', KEYS[1], ARGV[1])
+                        return server.call('INCRBY', KEYS[1], ARGV[1])
                     else return false end
                     """
                 else:
                     lua = """
-                    return valkey.call('INCRBY', KEYS[1], ARGV[1])
+                    return server.call('INCRBY', KEYS[1], ARGV[1])
                     """
                 value = client.eval(lua, 1, key, delta)
                 if value is None:
                     error_message = f"Key '{key!r}' not found"
                     raise ValueError(error_message)
             except ResponseError as e:
-                # if cached value or total value is greater than 64 bit signed
+                # if cached value or total value is greater than 64-bit signed
                 # integer.
                 # elif int is encoded. so valkey sees the data as string.
-                # In this situations redis will throw ResponseError
-                # TODO: check if valkey works the same
+                # In these situations valkey will throw ResponseError
 
                 # try to keep TTL of key
                 timeout = self.ttl(key, version=version, client=client)
