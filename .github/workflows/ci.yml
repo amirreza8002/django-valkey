@@ -55,12 +55,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Cache
-        id: cached-poetry
-        uses: actions/cache@v4
-        with:
-          path: ./.venv
-          key: venv-${{ hashFiles('poetry.lock') }}
+#      - name: Cache
+#        id: cached-poetry
+#        uses: actions/cache@v4
+#        with:
+#          path: ./.venv
+#          key: venv-${{ hashFiles('poetry.lock') }}
 
       - name: Install poetry
         if: steps.cached-poetry.outputs.cache-hit != 'true'
@@ -75,7 +75,7 @@ jobs:
           poetry config virtualenvs.in-project true --local
 
       - name: Install project
-        run: poetry install --no-interaction
+        run: poetry install --no-interaction --all-extras
 
       - name: tests
         run: |
