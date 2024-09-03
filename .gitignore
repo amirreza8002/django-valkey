@@ -30,3 +30,4 @@ cobertura.xml
 
 poetry.lock
 dist
+htmlcov
