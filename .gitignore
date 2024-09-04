@@ -31,3 +31,4 @@ cobertura.xml
 poetry.lock
 dist
 htmlcov
+test.sh
