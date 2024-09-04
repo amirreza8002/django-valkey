@@ -82,3 +82,4 @@ DJANGO_SETTINGS_MODULE = "tests.settings.sqlite"
 
 [tool.coverage.run]
 plugins = ["django_coverage_plugin"]
+parallel = true
