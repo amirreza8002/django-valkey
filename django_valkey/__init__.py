@@ -1,10 +1,10 @@
-VERSION = (0, 0, 1)
+VERSION = (0, 0, 11)
 __version__ = ".".join(map(str, VERSION))
 
 
 def get_valkey_connection(alias="default", write=True):
     """
-    Helper used for obtaining a raw redis client.
+    Helper used for obtaining a raw valkey client.
     """
 
     from django.core.cache import caches
