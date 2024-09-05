@@ -2,9 +2,12 @@ import random
 import socket
 import time
 from collections import OrderedDict
+from typing import Tuple, Any
 
 from django.conf import settings
+from valkey import Valkey
 from valkey.exceptions import ConnectionError, ResponseError, TimeoutError
+from valkey.typing import KeyT, EncodableT
 
 from django_valkey.client.default import DEFAULT_TIMEOUT, DefaultClient
 from django_valkey.exceptions import ConnectionInterrupted
@@ -34,14 +37,14 @@ def _is_expired(x, herd_timeout: int) -> bool:
 class HerdClient(DefaultClient):
     def __init__(self, *args, **kwargs):
         self._marker = Marker()
-        self._herd_timeout = getattr(settings, "CACHE_HERD_TIMEOUT", 60)
+        self._herd_timeout: int = getattr(settings, "CACHE_HERD_TIMEOUT", 60)
         super().__init__(*args, **kwargs)
 
-    def _pack(self, value, timeout):
+    def _pack(self, value: Any, timeout) -> Tuple[Marker, Any, int]:
         herd_timeout = (timeout or self._backend.default_timeout) + int(time.time())
         return self._marker, value, herd_timeout
 
-    def _unpack(self, value):
+    def _unpack(self, value: Tuple[Marker, Any, int]) -> Tuple[Any, bool]:
         try:
             marker, unpacked, herd_timeout = value
         except (ValueError, TypeError):
@@ -50,7 +53,7 @@ class HerdClient(DefaultClient):
         if not isinstance(marker, Marker):
             return value, False
 
-        now = int(time.time())
+        now = time.time()
         if herd_timeout < now:
             x = now - herd_timeout
             return unpacked, _is_expired(x, self._herd_timeout)
@@ -59,13 +62,13 @@ class HerdClient(DefaultClient):
 
     def set(
         self,
-        key,
-        value,
-        timeout=DEFAULT_TIMEOUT,
-        version=None,
-        client=None,
-        nx=False,
-        xx=False,
+        key: KeyT,
+        value: EncodableT,
+        timeout: int | None = DEFAULT_TIMEOUT,
+        version: int | None = None,
+        client: Valkey | None = None,
+        nx: bool = False,
+        xx: bool = False,
     ):
         if timeout is DEFAULT_TIMEOUT:
             timeout = self._backend.default_timeout
@@ -85,7 +88,13 @@ class HerdClient(DefaultClient):
         real_timeout = timeout + self._herd_timeout
 
         return super().set(
-            key, packed, timeout=real_timeout, version=version, client=client, nx=nx
+            key,
+            packed,
+            timeout=real_timeout,
+            version=version,
+            client=client,
+            nx=nx,
+            xx=xx,
         )
 
     def get(self, key, default=None, version=None, client=None):

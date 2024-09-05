@@ -1,20 +1,19 @@
 import functools
 import logging
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict
 
 from django import VERSION as DJANGO_VERSION
 from django.conf import settings
 from django.core.cache.backends.base import BaseCache
 from django.utils.module_loading import import_string
 
+from django_valkey.client import DefaultClient
 from django_valkey.exceptions import ConnectionInterrupted
 
 CONNECTION_INTERRUPTED = object()
 
 
-def omit_exception(
-    method: Optional[Callable] = None, return_value: Optional[Any] = None
-):
+def omit_exception(method: Callable | None = None, return_value: Any | None = None):
     """
     Simple decorator that intercepts connection
     errors and ignores these if settings specify this.
@@ -47,7 +46,7 @@ class ValkeyCache(BaseCache):
             settings, "DJANGO_VALKEY_SCAN_ITERSIZE", 10
         )
 
-        options = params.get("OPTIONS", {})
+        options: dict = params.get("OPTIONS", {})
         self._client_cls = options.get(
             "CLIENT_CLASS", "django_valkey.client.DefaultClient"
         )
@@ -68,7 +67,7 @@ class ValkeyCache(BaseCache):
         )
 
     @property
-    def client(self):
+    def client(self) -> DefaultClient | Any:
         """
         Lazy client connection property.
         """

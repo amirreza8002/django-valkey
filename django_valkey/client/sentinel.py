@@ -22,9 +22,9 @@ class SentinelClient(DefaultClient):
         if isinstance(server, str):
             url = urlparse(server)
             primary_query = parse_qs(url.query, keep_blank_values=True)
-            replica_query = dict(primary_query)
-            primary_query["is_master"] = [1]
-            replica_query["is_master"] = [0]
+            replica_query = primary_query
+            primary_query["is_master"] = [1]  # type: ignore
+            replica_query["is_master"] = [0]  # type: ignore
 
             server = [replace_query(url, i) for i in (primary_query, replica_query)]
 
