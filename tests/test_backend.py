@@ -16,6 +16,7 @@ from django_valkey.cache import ValkeyCache
 from django_valkey.client import ShardClient, herd
 from django_valkey.serializers.json import JSONSerializer
 from django_valkey.serializers.msgpack import MSGPackSerializer
+from django_valkey.serializers.pickle import PickleSerializer
 
 
 @pytest.fixture
@@ -928,10 +929,86 @@ class TestDjangoValkeyCache:
         assert cache.sinterstore("foo3", "foo1", "foo2") == 1
         assert cache.smembers("foo3") == {"bar2"}
 
-    def test_sismember(self, cache: ValkeyCache):
+    def test_sismember_str(self, cache: ValkeyCache):
         cache.sadd("foo", "bar")
         assert cache.sismember("foo", "bar") is True
         assert cache.sismember("foo", "bar2") is False
+
+    def test_sismember_int(self, cache: ValkeyCache):
+        cache.sadd("baz", 3)
+        assert cache.sismember("baz", 3) is True
+        assert cache.sismember("baz", 2) is False
+
+    def test_sismember_float(self, cache: ValkeyCache):
+        cache.sadd("foo", 3.0)
+        assert cache.sismember("foo", 3.0) is True
+        assert cache.sismember("foo", 2.0) is False
+
+    def test_sismember_byte(self, cache: ValkeyCache):
+        if isinstance(cache.client._serializer, JSONSerializer):
+            pytest.skip("JSONSerializer doesn't support get_client")
+        cache.sadd("foo", b"abc")
+        assert cache.sismember("foo", b"abc") is True
+        assert cache.sismember("foo", b"def") is False
+
+    def test_sismember_bytearray(self, cache: ValkeyCache):
+        if isinstance(cache.client._serializer, JSONSerializer):
+            pytest.skip("JSONSerializer doesn't support get_client")
+        right_val = bytearray(b"abc")
+        wrong_val = bytearray(b"def")
+        cache.sadd("foo", right_val)
+        assert cache.sismember("foo", right_val) is True
+        assert cache.sismember("foo", wrong_val) is False
+
+    def test_sismember_memoryview(self, cache: ValkeyCache):
+        if isinstance(cache.client._serializer, (PickleSerializer, JSONSerializer)):
+            pytest.skip("PickleSerializer doesn't support get_client")
+        right_val = memoryview(b"abc")
+        wrong_val = memoryview(b"def")
+        cache.sadd("foo", right_val)
+        assert cache.sismember("foo", right_val) is True
+        assert cache.sismember("foo", wrong_val) is False
+
+    def test_sismember_complex(self, cache: ValkeyCache):
+        if isinstance(cache.client._serializer, (JSONSerializer, MSGPackSerializer)):
+            pytest.skip("JSONSerializer doesn't support get_client")
+        cache.sadd("foo", 3j)
+        assert cache.sismember("foo", 3j) is True
+        assert cache.sismember("foo", 4j) is False
+
+    def test_sismember_list(self, cache: ValkeyCache):
+        cache.sadd("foo", [1, 2, 3])
+        assert cache.sismember("foo", [1, 2, 3]) is True
+        assert cache.sismember("foo", [1, 2, 4]) is False
+
+    def test_sismember_tuple(self, cache: ValkeyCache):
+        cache.sadd("foo", (1, 2, 3))
+        assert cache.sismember("foo", (1, 2, 3)) is True
+        assert cache.sismember("foo", (1, 2, 4)) is False
+
+    def test_sismember_set(self, cache: ValkeyCache):
+        if isinstance(cache.client._serializer, (MSGPackSerializer, JSONSerializer)):
+            pytest.skip("MSGPackSerializer doesn't support get_client")
+        cache.sadd("foo", {1, 2, 3})
+        assert cache.sismember("foo", {1, 2, 3}) is True
+        assert cache.sismember("foo", {1, 2, 4}) is False
+
+    def test_sismember_frozenset(self, cache: ValkeyCache):
+        if isinstance(cache.client._serializer, (MSGPackSerializer, JSONSerializer)):
+            pytest.skip("MSGPackSerializer doesn't support get_client")
+        cache.sadd("foo", frozenset(("a", "b")))
+        assert cache.sismember("foo", frozenset(("a", "b"))) is True
+        assert cache.sismember("foo", frozenset(("d", "c"))) is False
+
+    def test_sismember_dict(self, cache: ValkeyCache):
+        cache.sadd("foo", {"a": 1, "b": 2})
+        assert cache.sismember("foo", {"a": 1, "b": 2}) is True
+        assert cache.sismember("foo", {"a": 1, "c": 3}) is False
+
+    def test_sismember_bool(self, cache: ValkeyCache):
+        cache.sadd("foo", True)
+        assert cache.sismember("foo", True) is True
+        assert cache.sismember("foo", False) is False
 
     def test_smove(self, cache: ValkeyCache):
         if isinstance(cache.client, ShardClient):
