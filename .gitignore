@@ -32,3 +32,4 @@ poetry.lock
 dist
 htmlcov
 test.sh
+test_*.sh
