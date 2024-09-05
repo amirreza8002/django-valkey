@@ -139,7 +139,7 @@ class TestShardClient:
 
         connection = Mock()
         connection.scan_iter.return_value = []
-        client._serverdict = {"test": connection}
+        client._server_dict = {"test": connection}
 
         client.delete_pattern(pattern="foo*", itersize=10)
 
@@ -155,7 +155,7 @@ class TestShardClient:
         client._backend.key_prefix = ""
         connection = Mock()
         connection.scan_iter.return_value = []
-        client._serverdict = {"test": connection}
+        client._server_dict = {"test": connection}
 
         client.delete_pattern(pattern="foo*")
 
@@ -174,7 +174,7 @@ class TestShardClient:
         connection = Mock()
         connection.scan_iter.return_value = [Mock(), Mock()]
         connection.delete.return_value = 0
-        client._serverdict = {"test": connection}
+        client._server_dict = {"test": connection}
 
         client.delete_pattern(pattern="foo*")
 
