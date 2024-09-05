@@ -1,20 +1,13 @@
 import lzma
 
 from django_valkey.compressors.base import BaseCompressor
-from django_valkey.exceptions import CompressorError
 
 
 class LzmaCompressor(BaseCompressor):
     min_length = 100
-    preset = 4
 
-    def compress(self, value: bytes) -> bytes:
-        if len(value) > self.min_length:
-            return lzma.compress(value, preset=self.preset)
-        return value
+    def _compress(self, value: bytes) -> bytes:
+        return lzma.compress(value, preset=self.preset)
 
-    def decompress(self, value: bytes) -> bytes:
-        try:
-            return lzma.decompress(value)
-        except lzma.LZMAError as e:
-            raise CompressorError from e
+    def _decompress(self, value: bytes) -> bytes:
+        return lzma.decompress(value)

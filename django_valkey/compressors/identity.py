@@ -2,8 +2,10 @@ from django_valkey.compressors.base import BaseCompressor
 
 
 class IdentityCompressor(BaseCompressor):
-    def compress(self, value: bytes) -> bytes:
+    min_length = 0
+
+    def _compress(self, value: bytes) -> bytes:
         return value
 
-    def decompress(self, value: bytes) -> bytes:
+    def _decompress(self, value: bytes) -> bytes:
         return value
