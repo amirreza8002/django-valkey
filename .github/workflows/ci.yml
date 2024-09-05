@@ -99,6 +99,7 @@ jobs:
           poetry run pytest --ds=tests.settings.sqlite_zlib
           poetry run pytest --ds=tests.settings.sqlite_zstd
           poetry run pytest --ds=tests.settings.sqlite_gzip
+          poetry run pytest --ds=tests.settings.sqlite_bz2
 
         env:
           DJANGO: ${{ matrix.django-version }}

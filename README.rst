@@ -251,8 +251,6 @@ Let see an example, of how make it work with *lzma* compression format:
 
 .. code-block:: python
 
-    import lzma
-
     CACHES = {
         "default": {
             # ...
@@ -265,8 +263,6 @@ Let see an example, of how make it work with *lzma* compression format:
 *Lz4* compression support (requires the lz4 library):
 
 .. code-block:: python
-
-    import lz4
 
     CACHES = {
         "default": {
@@ -281,8 +277,6 @@ Let see an example, of how make it work with *lzma* compression format:
 
 .. code-block:: python
 
-    import pyzstd
-
     CACHES = {
         "default": {
             # ...
@@ -296,13 +290,24 @@ Let see an example, of how make it work with *lzma* compression format:
 
 .. code-block:: python
 
-    import gzip
-
     CACHES = {
         "default": {
             # ...
             "OPTIONS": {
                 "COMPRESSOR": "django_valkey.compressors.gzip.GzipCompressor",
+            }
+        }
+    }
+
+*Bz2* compression support:
+
+.. code-block:: python
+
+    CACHES = {
+        "default": {
+            # ...
+            "OPTIONS": {
+                "COMPRESSOR": "django_valkey.compressors.bz2.Bz2Compressor",
             }
         }
     }
