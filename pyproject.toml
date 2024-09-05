@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "django-valkey"
-version = "0.0.11"
+version = "0.0.12"
 license = "BSD-3-Caluse"
 description = "a valkey backend for django, forked from django-redis"
 authors = ["amirreza <amir.rsf1380@gmail.com>"]
