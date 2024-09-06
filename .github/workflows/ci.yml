@@ -22,16 +22,6 @@ jobs:
 
         # Only test pre-release dependencies for the latest Python.
         include:
-          # Django 4.2 and python 3.8 with latest redis
-          - django-version: '4.2'
-            valkey-version: 'latest'
-            python-version: '3.8'
-
-          # Django 4.2 and python 3.9 with latest redis
-          - django-version: '4.2'
-            valkey-version: 'latest'
-            python-version: '3.9'
-
           # latest Django with pre-release redis
           - django-version: '5.0'
             valkey-version: 'master'
