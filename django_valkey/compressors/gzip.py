@@ -7,16 +7,14 @@ class GzipCompressor(BaseCompressor):
     """
     GzipCompressor
     set with:
-    ```
-       CACHES = {
-            "default": {
-                # ...
-                "OPTIONS": {
-                    "COMPRESSOR": "django_valkey.compressors.gzip.GzipCompressor",
+    CACHES = {
+        "default": {
+            # ...
+            "OPTIONS": {
+                "COMPRESSOR": "django_valkey.compressors.gzip.GzipCompressor",
                 }
             }
         }
-    ```
 
     compression parameters:
     to set `compresslevel` use `CACHE_COMPRESS_LEVEL` in your settings, defaults to 4.

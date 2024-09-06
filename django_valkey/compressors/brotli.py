@@ -9,16 +9,15 @@ class BrotliCompressor(BaseCompressor):
     """
      Brotli compressor
      set with:
-        ```
-        CACHES = {
-             "default": {
-                 # ...
-                 "OPTIONS": {
-                     "COMPRESSOR": "django_valkey.compressors.brotli.BrotliCompressor",
+     CACHES = {
+         "default": {
+             # ...
+             "OPTIONS": {
+                 "COMPRESSOR": "django_valkey.compressors.brotli.BrotliCompressor",
                  }
              }
          }
-     ```
+
     compression parameters:
      to set `quality` use `CACHE_COMPRESS_LEVEL` in your settings, defaults to 4.
      to set `minimum size` set `CACHE_COMPRESS_MIN_LENGTH` in your settings, defaults to 15.

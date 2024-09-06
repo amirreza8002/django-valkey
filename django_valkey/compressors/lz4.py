@@ -10,16 +10,14 @@ class Lz4Compressor(BaseCompressor):
     """
     Lz4 compressor
     set with:
-    ```
-       CACHES = {
-            "default": {
-                # ...
-                "OPTIONS": {
-                    "COMPRESSOR": "django_valkey.compressors.lz4.Lz4Compressor",
+    CACHES = {
+        "default": {
+            # ...
+            "OPTIONS": {
+                "COMPRESSOR": "django_valkey.compressors.lz4.Lz4Compressor",
                 }
             }
         }
-    ```
 
     compression parameters:
     to set `compression_level` use `CACHE_COMPRESS_LEVEL` in your settings, defaults to 4.

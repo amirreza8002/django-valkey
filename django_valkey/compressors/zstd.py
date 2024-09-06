@@ -9,16 +9,15 @@ class ZStdCompressor(BaseCompressor):
     """
     ZStdCompressor
     set with:
-    ```
-       CACHES = {
+    CACHES = {
         "default": {
             # ...
             "OPTIONS": {
                 "COMPRESSOR": "django_valkey.compressors.zstd.ZStdCompressor",
+                }
             }
         }
-    }
-    ```
+
     compression parameters:
     to set `level_or_option` use either `CACHE_COMPRESS_LEVEL` or `COMPRESS_ZSTD_OPTIONS` in your settings.
     if `COMPRESSION_ZSTD_OPTIONS` is set, level won't be used

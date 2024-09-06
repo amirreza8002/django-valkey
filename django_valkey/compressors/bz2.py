@@ -7,16 +7,14 @@ class Bz2Compressor(BaseCompressor):
     """
     Bz2Compressor
     set with:
-    ```
-       CACHES = {
-            "default": {
-                # ...
-                "OPTIONS": {
-                    "COMPRESSOR": "django_valkey.compressors.bz2.Bz2Compressor",
+    CACHES = {
+        "default": {
+            # ...
+            "OPTIONS": {
+                "COMPRESSOR": "django_valkey.compressors.bz2.Bz2Compressor",
                 }
             }
         }
-    ```
 
     compression parameters:
     to set `compresslevel` use `CACHE_COMPRESS_LEVEL` in your settings, defaults to 4.

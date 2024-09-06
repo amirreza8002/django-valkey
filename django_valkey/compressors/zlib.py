@@ -10,16 +10,15 @@ class ZlibCompressor(BaseCompressor):
     """
     zlib compression
     set with:
-     ```
-     CACHES = {
+    CACHES = {
         "default": {
             # ...
             "OPTIONS": {
                 "COMPRESSOR": "django_valkey.compressors.zlib.ZlibCompressor",
+                }
             }
         }
-    }
-    ```
+
     compression parameters:
     to set `level` use `CACHE_COMPRESS_LEVEL` in your settings, defaults to 4.
     to set `minimum size` set `CACHE_COMPRESS_MIN_LENGTH` in your settings, defaults to 15.

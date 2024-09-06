@@ -9,8 +9,7 @@ class LzmaCompressor(BaseCompressor):
     """
     LzmaCompressor
     set with:
-    ```
-       CACHES = {
+    CACHES = {
         "default": {
             # ...
             "OPTIONS": {
@@ -18,7 +17,6 @@ class LzmaCompressor(BaseCompressor):
                 }
             }
         }
-    ```
 
     compression parameters:
     to set `preset` use `CACHE_COMPRESS_LEVEL` in your settings, defaults to 4.
