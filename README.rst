@@ -69,6 +69,10 @@ Install 3rd party compression
 
     python -m pip install django-valkey[pyzstd]
 
+.. code-block:: console
+
+    python -m pip install django-valkey[brotli]
+
 Configure as cache backend
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -246,7 +250,13 @@ by default. You can activate it setting up a concrete backend:
             }
         }
     }
+    # optionally you can set compression parameters:
+    CACHE_COMPRESS_LEVEL = 9  # defaults to 6
+    CACHE_COMPRESS_MIN_LEVEL = 15  # defaults to 15
 
+    compress_zlib_wbits = 15  # defaults to 15
+
+*NOTE* the values shown here are only examples and *not* best practice or anything.
 Let see an example, of how make it work with *lzma* compression format:
 
 .. code-block:: python
@@ -259,6 +269,20 @@ Let see an example, of how make it work with *lzma* compression format:
             }
         }
     }
+    # optionally you can set compression parameters:
+    CACHE_COMPRESS_LEVEL = 9  # defaults to 4
+    CACHE_COMPRESS_MIN_LEVEL = 15  # defaults to 15
+
+    COMPRESS_LZMA_FORMAT = 1  # defaults to 1
+    COMPRESS_LZMA_CHECK = -1  # defaults to -1
+    COMPRESS_LZMA_FILTERS = None  # defaults to None
+
+    # optional decompression parameters
+    DECOMPRESS_LZMA_MEMLIMIT = None  # defaults to None (if you want to change this, make sure you read lzma docs about it's dangers)
+    DECOMPRESS_LZMA_FORMAT = 0  # defaults to 4
+    DECOMPERSS_LZMA_FILTERS = None  # defaults to None
+
+*NOTE* the values shown here are only examples and *not* best practice or anything.
 
 *Lz4* compression support (requires the lz4 library):
 
@@ -272,6 +296,16 @@ Let see an example, of how make it work with *lzma* compression format:
             }
         }
     }
+    # optionally you can set compression parameters:
+    CACHE_COMPRESS_LEVEL = 0  # defaults to 0
+    CACHE_COMPRESS_MIN_LEVEL = 15  # defaults to 15
+
+    COMPRESS_LZ4_BLOCK_SIZE = 0  # defaults to 0
+    COMPRESS_LZ4_CONTENT_CHECKSUM = 0  # defaults to 0
+    COMPRESS_LZ4_BLOCK_LINKED = True  # defaults to True
+    COMPRESS_LZ4_STORE_SIZE = True  # defaults to True
+
+*NOTE* the values shown here are only examples and *not* best practice or anything.
 
 *Zstandard (zstd)* compression support (requires the pyzstd library):
 
@@ -285,6 +319,17 @@ Let see an example, of how make it work with *lzma* compression format:
             }
         }
     }
+    # optionally you can set compression parameters:
+    CACHE_COMPRESS_LEVEL = 1  # defaults to 1
+    CACHE_COMPRESS_MIN_LEVEL = 15  # defaults to 15
+
+    # the below settings are all defaulted to None
+    COMPRESS_ZSTD_OPTIONS = {...}  # if you set this, `CACHE_COMPRESS_LEVEL` will be ignored.
+    DECOMPRESS_ZSTD_OPTIONS = {...}  # note: if you don't set this, the above one will be used.
+    COMPRESS_ZSTD_DICT = {...}
+    DECOMPRESS_ZSTD_DICT = {...}  # note: if you don't set this, the above one will be used.
+
+*NOTE* the values shown here are only examples and *not* best practice or anything.
 
 *Gzip* compression support:
 
@@ -298,6 +343,11 @@ Let see an example, of how make it work with *lzma* compression format:
             }
         }
     }
+    # optionally you can set compression parameters:
+    CACHE_COMPRESS_LEVEL = 9  # defaults to 9
+    CACHE_COMPRESS_MIN_LEVEL = 15  # defaults to 15
+
+*NOTE* the values shown here are only examples and *not* best practice or anything.
 
 *Bz2* compression support:
 
@@ -311,6 +361,32 @@ Let see an example, of how make it work with *lzma* compression format:
             }
         }
     }
+    # optionally you can set compression parameters:
+    CACHE_COMPRESS_LEVEL = 9  # defaults to 9
+    CACHE_COMPRESS_MIN_LEVEL = 15  # defaults to 15
+
+*NOTE* the values shown here are only examples and *not* best practice or anything.
+
+*Brotli* compression support (requires the brotli library):
+
+.. code-block:: python
+
+    CACHES = {
+        "default": {
+            # ...
+            "OPTIONS": {
+                "COMPRESSOR": "django_valkey.compressors.brotli.BrotliCompressor",
+            }
+        }
+    }
+    # optionally you can set compression parameters:
+    CACHE_COMPRESS_LEVEL = 11  # defaults to 11
+    CACHE_COMPRESS_MIN_LENGTH = 15  # defaults to 15
+    COMPRESS_BROTLI_LGWIN = 22  # defaults to 22
+    COMPRESS_BROTLI_LGBLOCK = 0  # defaults to 0
+    COMPRESS_BROTLI_MODE = "GENERIC"  # defaults to "GENERIC" other options are: ("GENERIC", "TEXT", "FONT")
+
+*NOTE* the values shown here are only examples and *not* best practice or anything.
 
 Memcached exceptions behavior
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

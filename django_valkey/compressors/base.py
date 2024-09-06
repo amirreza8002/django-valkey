@@ -1,9 +1,11 @@
+from django.conf import settings
+
 from django_valkey.exceptions import CompressorError
 
 
 class BaseCompressor:
-    min_length = 15
-    preset = 4
+    min_length = getattr(settings, "CACHE_COMPRESS_MIN_LENGTH", 15)
+    level: int | None = getattr(settings, "CACHE_COMPRESS_LEVEL", None)
 
     def __init__(self, options):
         self._options: dict = options
