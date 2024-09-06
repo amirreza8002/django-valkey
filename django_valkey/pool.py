@@ -26,11 +26,9 @@ class ConnectionFactory:
         self.pool_cls: ConnectionPool | Any = import_string(pool_cls_path)
         self.pool_cls_kwargs = options.get("CONNECTION_POOL_KWARGS", {})
 
-        valkey_client_cls_path = options.get(
-            "VALKEY_CLIENT_CLASS", "valkey.client.Valkey"
-        )
-        self.valkey_client_cls: Valkey | Any = import_string(valkey_client_cls_path)
-        self.valkey_client_cls_kwargs = options.get("CLIENT_KWARGS", {})
+        base_client_cls_path = options.get("BASE_CLIENT_CLASS", "valkey.client.Valkey")
+        self.base_client_cls: Valkey | Any = import_string(base_client_cls_path)
+        self.base_client_cls_kwargs = options.get("BASE_CLIENT_KWARGS", {})
 
         self.options = options
 
@@ -91,9 +89,7 @@ class ConnectionFactory:
         for create new connection.
         """
         pool = self.get_or_create_connection_pool(params)
-        return self.valkey_client_cls(
-            connection_pool=pool, **self.valkey_client_cls_kwargs
-        )
+        return self.base_client_cls(connection_pool=pool, **self.base_client_cls_kwargs)
 
     def get_parser_cls(self):
         cls = self.options.get("PARSER_CLASS", None)
