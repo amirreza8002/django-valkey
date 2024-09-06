@@ -946,14 +946,14 @@ class TestDjangoValkeyCache:
 
     def test_sismember_byte(self, cache: ValkeyCache):
         if isinstance(cache.client._serializer, JSONSerializer):
-            pytest.skip("JSONSerializer doesn't support get_client")
+            pytest.skip("JSONSerializer doesn't support the byte type")
         cache.sadd("foo", b"abc")
         assert cache.sismember("foo", b"abc") is True
         assert cache.sismember("foo", b"def") is False
 
     def test_sismember_bytearray(self, cache: ValkeyCache):
         if isinstance(cache.client._serializer, JSONSerializer):
-            pytest.skip("JSONSerializer doesn't support get_client")
+            pytest.skip("JSONSerializer doesn't support the bytearray type")
         right_val = bytearray(b"abc")
         wrong_val = bytearray(b"def")
         cache.sadd("foo", right_val)
@@ -962,7 +962,9 @@ class TestDjangoValkeyCache:
 
     def test_sismember_memoryview(self, cache: ValkeyCache):
         if isinstance(cache.client._serializer, (PickleSerializer, JSONSerializer)):
-            pytest.skip("PickleSerializer doesn't support get_client")
+            pytest.skip(
+                "PickleSerializer/JSONSerializer doesn't support the memoryview type"
+            )
         right_val = memoryview(b"abc")
         wrong_val = memoryview(b"def")
         cache.sadd("foo", right_val)
@@ -971,7 +973,9 @@ class TestDjangoValkeyCache:
 
     def test_sismember_complex(self, cache: ValkeyCache):
         if isinstance(cache.client._serializer, (JSONSerializer, MSGPackSerializer)):
-            pytest.skip("JSONSerializer doesn't support get_client")
+            pytest.skip(
+                "JSONSerializer/MSGPackSerializer doesn't support the complex type"
+            )
         cache.sadd("foo", 3j)
         assert cache.sismember("foo", 3j) is True
         assert cache.sismember("foo", 4j) is False
@@ -988,14 +992,14 @@ class TestDjangoValkeyCache:
 
     def test_sismember_set(self, cache: ValkeyCache):
         if isinstance(cache.client._serializer, (MSGPackSerializer, JSONSerializer)):
-            pytest.skip("MSGPackSerializer doesn't support get_client")
+            pytest.skip("MSGPackSerializer doesn't support the set type")
         cache.sadd("foo", {1, 2, 3})
         assert cache.sismember("foo", {1, 2, 3}) is True
         assert cache.sismember("foo", {1, 2, 4}) is False
 
     def test_sismember_frozenset(self, cache: ValkeyCache):
         if isinstance(cache.client._serializer, (MSGPackSerializer, JSONSerializer)):
-            pytest.skip("MSGPackSerializer doesn't support get_client")
+            pytest.skip("MSGPackSerializer doesn't support the frozenset type")
         cache.sadd("foo", frozenset(("a", "b")))
         assert cache.sismember("foo", frozenset(("a", "b"))) is True
         assert cache.sismember("foo", frozenset(("d", "c"))) is False
