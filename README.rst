@@ -74,6 +74,23 @@ Install 3rd party compression
     python -m pip install django-valkey[brotli]
 
 
+Documentation
+~~~~~~~~~~~~~
+check out our `Docs <https://django-valkey.readthedocs.io/en/latest/>`_ for a complete explanation
+
+
+Contribution
+~~~~~~~~~~~~
+contribution rules are like other projects,being respectful and keeping the ethics.
+also make an issue before going through troubles of coding, someone might already be doing what you want to do.
+
+
+Todo
+~~~~
+1. check type hints to e accurate
+2. refactor spaghetti codes
+3. review the documentations
+4. plan for an async client
 
 License
 -------

@@ -6,12 +6,13 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 import sphinx_pdj_theme
+import django_valkey
 
 
 project = "django-valkey"
 copyright = "2024, amirreza"
 author = "amirreza"
-release = "0.0.15"
+release = django_valkey.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "django-valkey"
-version = "0.0.15"
+version = "0.0.16"
 license = "BSD-3-Caluse"
 description = "a valkey backend for django, forked from django-redis"
 authors = ["amirreza <amir.rsf1380@gmail.com>"]
@@ -27,7 +27,7 @@ classifiers = [
 Homepage = "https://github.com/amirreza8002/django-valkey"
 Source = "https://github.com/amirreza8002/django-valkey"
 Issues = "https://github.com/amirreza8002/django-valkey/issues"
-
+Documentation = "https://django-valkey.readthedocs.io/en/latest/"
 
 [tool.poetry.dependencies]
 python = ">= 3.10"
