@@ -1,0 +1,18 @@
+version: "2"
+
+build:
+  os: "ubuntu-lts-latest"
+  tools:
+    python: "3.12"
+
+  jobs:
+    pre_build:
+      - pip install poetry
+      - poetry export --without-hashes -f requirements.txt -o requirements.txt --only docs
+      - pip install -r requirements.txt
+sphinx:
+  configuration: docs/source/conf.py
+
+formats:
+  - pdf
+  - epub
