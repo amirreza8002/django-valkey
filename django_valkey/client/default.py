@@ -43,19 +43,18 @@ class DefaultClient:
     ) -> None:
         self._backend = backend
         self._server = server
+        if not self._server:
+            error_message = "Missing connections string"
+            raise ImproperlyConfigured(error_message)
+        if not isinstance(self._server, (list, tuple, set)):
+            self._server = self._server.split(",")
+
         self._params = params
 
         self.reverse_key = get_key_func(
             params.get("REVERSE_KEY_FUNCTION")
             or "django_valkey.util.default_reverse_key"
         )
-
-        if not self._server:
-            error_message = "Missing connections string"
-            raise ImproperlyConfigured(error_message)
-
-        if not isinstance(self._server, (list, tuple, set)):
-            self._server = self._server.split(",")
 
         self._clients: List[Valkey | Any | None] = [None] * len(self._server)
         self._options: dict = params.get("OPTIONS", {})
@@ -99,15 +98,15 @@ class DefaultClient:
         Overwrite this function if you want a specific
         behavior.
         """
+        if write or len(self._server) == 1:
+            return 0
+
         if tried is None:
             tried = []
 
         if tried and len(tried) < len(self._server):
             not_tried = [i for i in range(0, len(self._server)) if i not in tried]
             return random.choice(not_tried)
-
-        if write or len(self._server) == 1:
-            return 0
 
         return random.randint(1, len(self._server) - 1)
 
@@ -347,6 +346,24 @@ class DefaultClient:
         # saying that timeout type is float | timedelta
         return client.expire(key, timeout)  # type: ignore
 
+    def expire_at(
+        self,
+        key: KeyT,
+        when: AbsExpiryT,
+        version: int | None = None,
+        client: Valkey | Any | None = None,
+    ) -> bool:
+        """
+        Set an expiry flag on a ``key`` to ``when``, which can be represented
+        as an integer indicating unix time or a Python datetime object.
+        """
+        if client is None:
+            client = self.get_client(write=True)
+
+        key = self.make_key(key, version=version)
+
+        return client.expireat(key, when)
+
     def pexpire(
         self,
         key: KeyT,
@@ -384,24 +401,6 @@ class DefaultClient:
         key = self.make_key(key, version=version)
 
         return bool(client.pexpireat(key, when))
-
-    def expire_at(
-        self,
-        key: KeyT,
-        when: AbsExpiryT,
-        version: int | None = None,
-        client: Valkey | Any | None = None,
-    ) -> bool:
-        """
-        Set an expiry flag on a ``key`` to ``when``, which can be represented
-        as an integer indicating unix time or a Python datetime object.
-        """
-        if client is None:
-            client = self.get_client(write=True)
-
-        key = self.make_key(key, version=version)
-
-        return client.expireat(key, when)
 
     def lock(
         self,
@@ -482,14 +481,13 @@ class DefaultClient:
         """
         Remove multiple keys at once.
         """
-
-        if client is None:
-            client = self.get_client(write=True)
-
         keys = [self.make_key(k, version=version) for k in keys]
 
         if not keys:
             return 0
+
+        if client is None:
+            client = self.get_client(write=True)
 
         try:
             return client.delete(*keys)
@@ -558,11 +556,11 @@ class DefaultClient:
             client = self.get_client(write=False)
 
         if not keys:
-            return OrderedDict()
+            return {}
 
-        recovered_data = OrderedDict()
+        recovered_data = {}
 
-        map_keys = OrderedDict((self.make_key(k, version=version), k) for k in keys)
+        map_keys = {self.make_key(k, version=version): k for k in keys}
 
         try:
             results = client.mget(*map_keys)
@@ -796,6 +794,7 @@ class DefaultClient:
     def make_key(
         self, key: KeyT, version: int | None = None, prefix: str | None = None
     ) -> KeyT:
+        """Return key as a CacheKey instance so it has additional methods"""
         if isinstance(key, CacheKey):
             return key
 
