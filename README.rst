@@ -90,7 +90,8 @@ Todo
 1. check type hints to e accurate
 2. refactor spaghetti codes
 3. review the documentations
-4. plan for an async client
+4. work on cluster client
+5. plan for an async client
 
 License
 -------
