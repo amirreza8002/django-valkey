@@ -7,9 +7,8 @@ build:
 
   jobs:
     pre_build:
-      - pip install poetry
-      - poetry export --without-hashes -f requirements.txt -o requirements.txt --only docs
-      - pip install -r requirements.txt
+      - pip install .
+      - pip install sphinx-pdj-theme
 sphinx:
   configuration: docs/source/conf.py
 
