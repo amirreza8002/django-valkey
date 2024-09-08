@@ -67,6 +67,7 @@ Requirements
    :caption: Index:
 
    installation
+   migration
    configure/configurations
    commands/commands
    changes

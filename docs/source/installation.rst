@@ -63,3 +63,12 @@ brotli library:
 .. code-block:: console
 
    pip install django-valkey[brotli]
+
+|
+|
+|
+
+Coming from django-redis?
+#########################
+
+check out our migration guide :doc:`migration`

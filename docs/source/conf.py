@@ -31,5 +31,5 @@ html_theme = "sphinx_pdj_theme"
 html_static_path = [sphinx_pdj_theme.get_html_theme_path()]
 
 html_sidebars = {
-    "**": ["globaltoc.html", "sourcelink.html", "searchbox.html"],
+    "**": ["globaltoc.html", "sourcelink.html", "searchbox.html", "relations.html"],
 }
