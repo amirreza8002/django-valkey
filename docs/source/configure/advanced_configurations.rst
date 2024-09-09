@@ -36,6 +36,8 @@ Now, lets look at other ways to configure this:
 * valkey://[[username]:[password]]@localhost:6379
 * valkeys://[[username]:[password]@localhost:6379
 * unix://[[username]:[password]@/path/to/socket.sock
+* unix://[username@]/path/to/socket.sock?db=0[&password=password]
+
 
 These three URL schemes are supported:
 * ``valkey://``: creates a normal TCP socket connection
@@ -47,8 +49,23 @@ Specify a database number:
 
 you can specify a database number in your URL like this:
 * A ``db`` querystring option, e.g. ``valkey://localhost:6379?db=0``
-* if using the ``valkey://`` scheme, the path argumentof the URL, e.g. ``valkey://localhost:6379/0``
+* if using the ``valkey://`` scheme, the path argument of the URL, e.g. ``valkey://localhost:6379/0``
 
+
+RESP3 support
+#############
+
+to enable RESP3, like other connections you can configure your server like this:
+
+.. code-block:: python
+
+    CACHE = {
+        "default": {
+            ...
+            "LOCATION": "valkey://django@localhost:6379?protocol=3",
+            }
+        }
+    }
 
 Configure as session backend
 ############################
