@@ -23,11 +23,11 @@ class ConnectionFactory:
         pool_cls_path = options.get(
             "CONNECTION_POOL_CLASS", "valkey.connection.ConnectionPool"
         )
-        self.pool_cls: ConnectionPool | Any = import_string(pool_cls_path)
+        self.pool_cls: type[ConnectionPool] | type = import_string(pool_cls_path)
         self.pool_cls_kwargs = options.get("CONNECTION_POOL_KWARGS", {})
 
         base_client_cls_path = options.get("BASE_CLIENT_CLASS", "valkey.client.Valkey")
-        self.base_client_cls: Valkey | Any = import_string(base_client_cls_path)
+        self.base_client_cls: type[Valkey] | type = import_string(base_client_cls_path)
         self.base_client_cls_kwargs = options.get("BASE_CLIENT_KWARGS", {})
 
         self.options = options
@@ -72,7 +72,7 @@ class ConnectionFactory:
         params = self.make_connection_params(url)
         return self.get_connection(params)
 
-    def disconnect(self, connection: Valkey) -> None:
+    def disconnect(self, connection: type[Valkey] | type) -> None:
         """
         Given a not null client connection it disconnects from the Valkey server.
 
@@ -91,15 +91,13 @@ class ConnectionFactory:
         pool = self.get_or_create_connection_pool(params)
         return self.base_client_cls(connection_pool=pool, **self.base_client_cls_kwargs)
 
-    def get_parser_cls(self):
+    def get_parser_cls(self) -> type[DefaultParser] | type:
         cls = self.options.get("PARSER_CLASS", None)
         if cls is None:
             return DefaultParser
         return import_string(cls)
 
-    def get_or_create_connection_pool(
-        self, params: dict
-    ) -> dict[str, ConnectionPool | Any]:
+    def get_or_create_connection_pool(self, params: dict) -> ConnectionPool | Any:
         """
         Given a connection parameters and return a new
         or cached connection pool for them.
@@ -179,7 +177,7 @@ class SentinelConnectionFactory(ConnectionFactory):
 
 def get_connection_factory(
     path: str | None = None, options: dict | None = None
-) -> ConnectionFactory | Any:
+) -> ConnectionFactory | SentinelConnectionFactory | Any:
     if path is None:
         path = getattr(
             settings,
@@ -191,4 +189,4 @@ def get_connection_factory(
         path = opt_conn_factory
 
     cls = import_string(path)
-    return cls(options or {})
+    return cls(options)
