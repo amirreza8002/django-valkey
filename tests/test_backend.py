@@ -2,7 +2,7 @@ import datetime
 import threading
 import time
 from datetime import timedelta
-from typing import Iterable, List, Union, cast
+from typing import Iterable, List, cast
 from unittest.mock import patch
 
 import pytest
@@ -104,7 +104,7 @@ class TestDjangoValkeyCache:
         if isinstance(cache.client._serializer, (JSONSerializer, MSGPackSerializer)):
             # JSONSerializer and MSGPackSerializer use the isoformat for
             # datetimes.
-            now_dt: Union[str, datetime.datetime] = datetime.datetime.now().isoformat()
+            now_dt: str | datetime.datetime = datetime.datetime.now().isoformat()
         else:
             now_dt = datetime.datetime.now()
 
@@ -256,8 +256,7 @@ class TestDjangoValkeyCache:
         res = cache.delete("a")
         assert bool(res) is False
 
-    @patch("django_valkey.cache.DJANGO_VERSION", (3, 1, 0, "final", 0))
-    def test_delete_return_value_type_new31(self, cache: ValkeyCache):
+    def test_delete_return_value_type(self, cache: ValkeyCache):
         """delete() returns a boolean instead of int since django version 3.1"""
         cache.set("a", 1)
         res = cache.delete("a")
@@ -266,17 +265,6 @@ class TestDjangoValkeyCache:
         res = cache.delete("b")
         assert isinstance(res, bool)
         assert res is False
-
-    @patch("django_valkey.cache.DJANGO_VERSION", new=(3, 0, 1, "final", 0))
-    def test_delete_return_value_type_before31(self, cache: ValkeyCache):
-        """delete() returns a int before django version 3.1"""
-        cache.set("a", 1)
-        res = cache.delete("a")
-        assert isinstance(res, int)
-        assert res == 1
-        res = cache.delete("b")
-        assert isinstance(res, int)
-        assert res == 0
 
     def test_delete_many(self, cache: ValkeyCache):
         cache.set_many({"a": 1, "b": 2, "c": 3})
