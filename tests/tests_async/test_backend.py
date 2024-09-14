@@ -712,9 +712,9 @@ class TestAsyncDjangoValkeyCache:
 
         # Test simple result
         result = set()
-        async with contextlib.aclosing(cache.aiter_keys("foo*")) as values:
-            async for v in values:
-                result.add(v)
+        async with contextlib.aclosing(cache.aiter_keys("foo*")) as keys:
+            async for k in keys:
+                result.add(k)
         assert result == {"foo1", "foo2", "foo3"}
 
     async def test_iter_keys_itersize(self, cache: AsyncValkeyCache):
@@ -727,9 +727,9 @@ class TestAsyncDjangoValkeyCache:
 
         # Test limited result
         result = []
-        async with contextlib.aclosing(cache.aiter_keys("foo*", itersize=2)) as values:
-            async for v in values:
-                result.append(v)
+        async with contextlib.aclosing(cache.aiter_keys("foo*", itersize=2)) as keys:
+            async for k in keys:
+                result.append(k)
         assert len(result) == 3
 
     async def test_iter_keys_generator(self, cache: AsyncValkeyCache):
