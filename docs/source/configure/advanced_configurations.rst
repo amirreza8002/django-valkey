@@ -2,6 +2,8 @@
 Advanced configurations
 =======================
 
+.. _url:
+
 Configure the database URL
 ##########################
 
@@ -33,16 +35,16 @@ or if you are using ACL, you can do something like this:
 
 Now, lets look at other ways to configure this:
 
-* valkey://[[username]:[password]]@localhost:6379
-* valkeys://[[username]:[password]@localhost:6379
-* unix://[[username]:[password]@/path/to/socket.sock
-* unix://[username@]/path/to/socket.sock?db=0[&password=password]
+#. valkey://[[username]:[password]]@localhost:6379
+#. valkeys://[[username]:[password]@localhost:6379
+#. unix://[[username]:[password]@/path/to/socket.sock
+#. unix://[username@]/path/to/socket.sock?db=0[&password=password]
 
 
 These three URL schemes are supported:
-* ``valkey://``: creates a normal TCP socket connection
-* ``valkeys://``: creates a SSL wrapped TCP socket connection
-* ``unix://``: creates a Unix Domain Socket connection
+#. ``valkey://``: creates a normal TCP socket connection
+#. ``valkeys://``: creates a SSL wrapped TCP socket connection
+#. ``unix://``: creates a Unix Domain Socket connection
 
 Specify a database number:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
