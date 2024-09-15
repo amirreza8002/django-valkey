@@ -270,7 +270,7 @@ class ShardClient(DefaultClient):
 
         return super().expire_at(key=key, when=when, version=version, client=client)
 
-    def lock(
+    def get_lock(
         self,
         key,
         version=None,
@@ -292,6 +292,9 @@ class ShardClient(DefaultClient):
             blocking_timeout=blocking_timeout,
             thread_local=thread_local,
         )
+
+    # TODO: delete in future.
+    lock = get_lock
 
     def delete_many(
         self, keys, version=None, _client: Valkey | Any | None = None
