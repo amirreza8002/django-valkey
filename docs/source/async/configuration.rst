@@ -15,6 +15,7 @@ to setup the async client you can configure your settings file to look like this
             "OPTIONS": {...},
             },
         }
+        
 take a look at :ref:`url` to see other ways to write the URL.
 And that's it, the backend defaults to use AsyncDefaultClient as client interface, AsyncConnectionFactory as connection factory and valkey-py's async client.
 

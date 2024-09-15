@@ -69,5 +69,6 @@ Requirements
    installation
    migration
    configure/configurations
+   async/async
    commands/commands
    changes
