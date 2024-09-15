@@ -256,8 +256,7 @@ class TestDjangoValkeyCache:
         res = cache.delete("a")
         assert bool(res) is False
 
-    @patch("django_valkey.cache.DJANGO_VERSION", (3, 1, 0, "final", 0))
-    def test_delete_return_value_type_new31(self, cache: ValkeyCache):
+    def test_delete_return_value_type(self, cache: ValkeyCache):
         """delete() returns a boolean instead of int since django version 3.1"""
         cache.set("a", 1)
         res = cache.delete("a")
@@ -266,17 +265,6 @@ class TestDjangoValkeyCache:
         res = cache.delete("b")
         assert isinstance(res, bool)
         assert res is False
-
-    @patch("django_valkey.cache.DJANGO_VERSION", new=(3, 0, 1, "final", 0))
-    def test_delete_return_value_type_before31(self, cache: ValkeyCache):
-        """delete() returns a int before django version 3.1"""
-        cache.set("a", 1)
-        res = cache.delete("a")
-        assert isinstance(res, int)
-        assert res == 1
-        res = cache.delete("b")
-        assert isinstance(res, int)
-        assert res == 0
 
     def test_delete_many(self, cache: ValkeyCache):
         cache.set_many({"a": 1, "b": 2, "c": 3})
