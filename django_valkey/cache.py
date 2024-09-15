@@ -1,12 +1,10 @@
 import functools
-import logging
-from typing import Any, Callable, Dict
+from inspect import iscoroutinefunction
+from typing import Any, Callable
 
-from django import VERSION as DJANGO_VERSION
-from django.conf import settings
-from django.core.cache.backends.base import BaseCache
-from django.utils.module_loading import import_string
+from valkey import Valkey
 
+from django_valkey.base import BaseValkeyCache
 from django_valkey.client import DefaultClient
 from django_valkey.exceptions import ConnectionInterrupted
 
@@ -34,46 +32,22 @@ def omit_exception(method: Callable | None = None, return_value: Any | None = No
                 return return_value
             raise e.__cause__  # noqa: B904
 
-    return _decorator
+    @functools.wraps(method)
+    async def _async_decorator(self, *args, **kwargs):
+        try:
+            return await method(self, *args, **kwargs)
+        except ConnectionInterrupted as e:
+            if self._ignore_exceptions:
+                if self._log_ignored_exceptions:
+                    self.logger.exception("Exception ignored")
+                return return_value
+            raise e.__cause__
+
+    return _async_decorator if iscoroutinefunction(method) else _decorator
 
 
-class ValkeyCache(BaseCache):
-    def __init__(self, server: str, params: Dict[str, Any]) -> None:
-        super().__init__(params)
-        self._server = server
-        self._params = params
-        self._default_scan_itersize = getattr(
-            settings, "DJANGO_VALKEY_SCAN_ITERSIZE", 10
-        )
-
-        options: dict = params.get("OPTIONS", {})
-        self._client_cls = options.get(
-            "CLIENT_CLASS", "django_valkey.client.DefaultClient"
-        )
-        self._client_cls = import_string(self._client_cls)
-        self._client = None
-
-        self._ignore_exceptions = options.get(
-            "IGNORE_EXCEPTIONS",
-            getattr(settings, "DJANGO_VALKEY_IGNORE_EXCEPTIONS", False),
-        )
-        self._log_ignored_exceptions = getattr(
-            settings, "DJANGO_VALKEY_LOG_IGNORED_EXCEPTIONS", False
-        )
-        self.logger = (
-            logging.getLogger(getattr(settings, "DJANGO_VALKEY_LOGGER", __name__))
-            if self._log_ignored_exceptions
-            else None
-        )
-
-    @property
-    def client(self) -> DefaultClient | Any:
-        """
-        Lazy client connection property.
-        """
-        if self._client is None:
-            self._client = self._client_cls(self._server, self._params, self)
-        return self._client
+class ValkeyCache(BaseValkeyCache[DefaultClient, Valkey]):
+    DEFAULT_CLIENT_CLASS = "django_valkey.client.DefaultClient"
 
     @omit_exception
     def set(self, *args, **kwargs):
@@ -99,9 +73,8 @@ class ValkeyCache(BaseCache):
 
     @omit_exception
     def delete(self, *args, **kwargs):
-        """returns a boolean instead of int since django version 3.1"""
         result = self.client.delete(*args, **kwargs)
-        return bool(result) if DJANGO_VERSION >= (3, 1, 0) else result
+        return bool(result)
 
     @omit_exception
     def delete_pattern(self, *args, **kwargs):
@@ -177,8 +150,8 @@ class ValkeyCache(BaseCache):
         return self.client.lock(*args, **kwargs)
 
     @omit_exception
-    def close(self, **kwargs):
-        self.client.close(**kwargs)
+    def close(self):
+        self.client.close()
 
     @omit_exception
     def touch(self, *args, **kwargs):
