@@ -71,4 +71,5 @@ Requirements
    configure/configurations
    async/async
    commands/commands
+   customize
    changes
