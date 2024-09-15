@@ -110,7 +110,7 @@ class BaseConnectionPool(Generic[Base, Pool]):
         return self.get_connection(params)
 
     def disconnect(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def get_parser_cls(self):
-        raise NotImplemented
+        raise NotImplementedError

@@ -4,7 +4,6 @@ from typing import Any, TypeVar, Generic, Iterator, AsyncGenerator, Set
 from django.conf import settings
 from django.core.cache.backends.base import BaseCache
 from django.utils.module_loading import import_string
-from requests import options
 
 Client = TypeVar("Client")
 Backend = TypeVar("Backend")
