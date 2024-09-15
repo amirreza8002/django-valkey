@@ -9,7 +9,7 @@ from valkey.asyncio.connection import ConnectionPool, DefaultParser
 from valkey.asyncio.sentinel import Sentinel
 from valkey._parsers.url_parser import to_bool
 
-from django_valkey.base_pool import BaseConnectionPool, Base, Pool
+from django_valkey.base_pool import BaseConnectionPool
 
 
 class AsyncConnectionFactory(BaseConnectionPool[AValkey, ConnectionPool]):
@@ -31,8 +31,9 @@ class AsyncConnectionFactory(BaseConnectionPool[AValkey, ConnectionPool]):
 
     async def get_connection(self, params: dict) -> AValkey | Any:
         pool = self.get_or_create_connection_pool(params)
-        return await self.base_client_cls(connection_pool=pool, **self.base_client_cls_kwargs)
-
+        return await self.base_client_cls(
+            connection_pool=pool, **self.base_client_cls_kwargs
+        )
 
 
 class AsyncSentinelConnectionFactory(AsyncConnectionFactory):
