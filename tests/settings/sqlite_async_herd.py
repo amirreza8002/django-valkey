@@ -1,5 +1,3 @@
-from tests.settings.sqlite_herd import CACHE_HERD_TIMEOUT
-
 SECRET_KEY = "django_tests_secret_key"
 
 CACHES = {

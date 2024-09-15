@@ -1,6 +1,5 @@
 import contextlib
 import random
-from collections.abc import Iterator
 from contextlib import suppress
 from typing import Any, Iterable, Set, cast, TYPE_CHECKING, AsyncGenerator
 
@@ -8,7 +7,6 @@ from django.conf import settings
 from django.core.cache.backends.base import DEFAULT_TIMEOUT, get_key_func
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.module_loading import import_string
-from mypy.reachability import assert_will_always_fail
 
 from valkey.asyncio import Valkey as AValkey
 from valkey.exceptions import ResponseError

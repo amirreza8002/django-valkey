@@ -99,7 +99,7 @@ class TestDjangoValkeyCacheEscapePrefix:
         await key_prefix_cache.aset("a", "1")
         await with_prefix_cache.aset("b", "2")
         await key_prefix_cache.adelete_pattern("*")
-        assert await  key_prefix_cache.ahas_key("a") is False
+        assert await key_prefix_cache.ahas_key("a") is False
         assert await with_prefix_cache.aget("b") == "2"
 
     async def test_iter_keys(
@@ -115,7 +115,9 @@ class TestDjangoValkeyCacheEscapePrefix:
 
         assert test_list == ["a"]
 
-    async def test_keys(self, key_prefix_cache: AsyncValkeyCache, with_prefix_cache: AsyncValkeyCache):
+    async def test_keys(
+        self, key_prefix_cache: AsyncValkeyCache, with_prefix_cache: AsyncValkeyCache
+    ):
         await key_prefix_cache.aset("a", "1")
         await with_prefix_cache.aset("b", "2")
         keys = await key_prefix_cache.akeys("*")
@@ -145,6 +147,4 @@ async def test_custom_key_function(cache: AsyncValkeyCache, settings: SettingsWr
     assert set(keys) == {"foo-bb", "foo-bc"}
     # ensure our custom function was actually called
     client = await cache.client.get_client(write=False)
-    assert {k.decode() for k in await client.keys("*")} == (
-        {"#1#foo-bc", "#1#foo-bb"}
-    )
+    assert {k.decode() for k in await client.keys("*")} == ({"#1#foo-bc", "#1#foo-bb"})

@@ -1,5 +1,4 @@
 import pytest
-import pytest_asyncio
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -11,7 +10,7 @@ from django_valkey.async_cache import pool
 async def test_connection_factory_redefine_from_opts():
     cf = sync_pool.get_connection_factory(
         options={
-            "CONNECTION_FACTORY":  "django_valkey.async_cache.pool.AsyncSentinelConnectionFactory",
+            "CONNECTION_FACTORY": "django_valkey.async_cache.pool.AsyncSentinelConnectionFactory",
             "SENTINELS": [("127.0.0.1", "26379")],
         },
     )
@@ -22,10 +21,13 @@ async def test_connection_factory_redefine_from_opts():
     "conn_factory,expected",
     [
         (
-                "django_valkey.async_cache.pool.AsyncSentinelConnectionFactory",
-                pool.AsyncSentinelConnectionFactory,
+            "django_valkey.async_cache.pool.AsyncSentinelConnectionFactory",
+            pool.AsyncSentinelConnectionFactory,
         ),
-        ("django_valkey.async_cache.pool.AsyncConnectionFactory", pool.AsyncConnectionFactory),
+        (
+            "django_valkey.async_cache.pool.AsyncConnectionFactory",
+            pool.AsyncConnectionFactory,
+        ),
     ],
 )
 @pytest.mark.asyncio
@@ -44,10 +46,13 @@ async def test_connection_factory_opts(conn_factory: str, expected):
     "conn_factory,expected",
     [
         (
-                "django_valkey.async_cache.pool.AsyncSentinelConnectionFactory",
-                pool.AsyncSentinelConnectionFactory,
+            "django_valkey.async_cache.pool.AsyncSentinelConnectionFactory",
+            pool.AsyncSentinelConnectionFactory,
         ),
-        ("django_valkey.async_cache.pool.AsyncConnectionFactory", pool.AsyncConnectionFactory),
+        (
+            "django_valkey.async_cache.pool.AsyncConnectionFactory",
+            pool.AsyncConnectionFactory,
+        ),
     ],
 )
 @pytest.mark.asyncio

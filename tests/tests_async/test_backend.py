@@ -280,22 +280,22 @@ class TestAsyncDjangoValkeyCache:
         assert res == {"c": 3}
 
         res = await cache.adelete_many(["a", "b"])
-        assert res is 0
+        assert res == 0
 
     async def test_delete_many_generator(self, cache: AsyncValkeyCache):
         await cache.aset_many({"a": 1, "b": 2, "c": 3})
         res = await cache.adelete_many(key for key in ["a", "b"])
-        assert res is 2
+        assert res == 2
 
         res = await cache.aget_many(["a", "b", "c"])
         assert res == {"c": 3}
 
         res = await cache.adelete_many((key for key in ("a", "b")))
-        assert res is 0
+        assert res == 0
 
     async def test_delete_many_empty_generator(self, cache: AsyncValkeyCache):
         res = await cache.adelete_many(key for key in cast(List[str], []))
-        assert res is 0
+        assert res == 0
 
     async def test_incr(self, cache: AsyncValkeyCache):
         if isinstance(cache.client, AsyncHerdClient):
@@ -742,7 +742,7 @@ class TestAsyncDjangoValkeyCache:
 
         # Test generator object
         result = cache.aiter_keys("foo*")
-        next_value = anext(result)
+        next_value = anext(result)  # noqa: F821
         assert next_value is not None
 
     async def test_primary_replica_switching(self, cache: AsyncValkeyCache):
