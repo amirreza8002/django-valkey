@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "django-valkey"
-version = "0.0.17"
+version = "0.1.0"
 license = "BSD-3-Caluse"
 description = "a valkey backend for django, forked from django-redis"
 authors = ["amirreza <amir.rsf1380@gmail.com>"]
@@ -8,6 +8,7 @@ readme = "README.rst"
 classifiers = [
     "Programming Language :: Python",
     "Environment :: Web Environment",
+    "Development Status :: 4 - Beta" ,
     "Topic :: Utilities",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: BSD License",
