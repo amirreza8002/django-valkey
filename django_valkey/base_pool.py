@@ -98,16 +98,14 @@ class BaseConnectionPool(Generic[Base, Pool]):
         The default implementation uses a cached pools
         for create new connection.
         """
-        pool = self.get_or_create_connection_pool(params)
-        return self.base_client_cls(connection_pool=pool, **self.base_client_cls_kwargs)
+        raise NotImplementedError
 
     def connect(self, url: str) -> Base | Any:
         """
         Given a basic connection parameters,
         return a new connection.
         """
-        params = self.make_connection_params(url)
-        return self.get_connection(params)
+        raise NotImplementedError
 
     def disconnect(self):
         raise NotImplementedError

@@ -9,7 +9,7 @@ from valkey.connection import ConnectionPool, DefaultParser
 from valkey.sentinel import Sentinel
 from valkey._parsers.url_parser import to_bool
 
-from django_valkey.base_pool import BaseConnectionPool
+from django_valkey.base_pool import BaseConnectionPool, Base
 
 
 class ConnectionFactory(BaseConnectionPool[Valkey, ConnectionPool]):
@@ -30,6 +30,13 @@ class ConnectionFactory(BaseConnectionPool[Valkey, ConnectionPool]):
             return DefaultParser
         return import_string(cls)
 
+    def connect(self, url :str) -> Valkey | Any:
+        params = self.make_connection_params(url)
+        return self.get_connection(params)
+
+    def get_connection(self, params: dict) -> Base | Any:
+        pool = self.get_or_create_connection_pool(params)
+        return self.base_client_cls(connection_pool=pool, **self.base_client_cls_kwargs)
 
 class SentinelConnectionFactory(ConnectionFactory):
     def __init__(self, options: dict):
