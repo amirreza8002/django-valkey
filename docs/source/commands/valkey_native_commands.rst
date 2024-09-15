@@ -170,8 +170,10 @@ valkey has distributed named locks which are identical to ``threading.Lock`` so 
 
 .. code-block:: python
 
-    with cache.lock("somekey"):
+    with cache.get_lock("somekey"):
         do_something())
+
+this command is also available as ``cache.lock()`` but will be removed in the future.
 
 Access Raw client
 *****************
