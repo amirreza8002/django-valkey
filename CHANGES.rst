@@ -1,3 +1,11 @@
+Version 0.1.3
+-------------
+
+- Moved some method implementation out of BaseConnectionFactory class
+
+- added a guide to use the base classes
+
+
 Version 0.1.2
 -------------
 
