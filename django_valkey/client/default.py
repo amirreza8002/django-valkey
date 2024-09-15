@@ -1,7 +1,6 @@
 import random
 import re
 import socket
-from collections import OrderedDict
 from contextlib import suppress
 from typing import (
     Any,
@@ -12,10 +11,11 @@ from typing import (
     Set,
     Tuple,
     cast,
+    TYPE_CHECKING,
 )
 
 from django.conf import settings
-from django.core.cache.backends.base import DEFAULT_TIMEOUT, BaseCache, get_key_func
+from django.core.cache.backends.base import DEFAULT_TIMEOUT, get_key_func
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.module_loading import import_string
 from valkey import Valkey
@@ -28,6 +28,9 @@ from django_valkey.exceptions import CompressorError, ConnectionInterrupted
 from django_valkey.serializers.pickle import PickleSerializer
 from django_valkey.util import CacheKey
 
+if TYPE_CHECKING:
+    from django_valkey.cache import ValkeyCache
+
 _main_exceptions = (TimeoutError, ResponseError, ConnectionError, socket.timeout)
 
 special_re = re.compile("([*?[])")
@@ -39,7 +42,10 @@ def glob_escape(s: str) -> str:
 
 class DefaultClient:
     def __init__(
-        self, server: str | Iterable, params: Dict[str, Any], backend: BaseCache
+        self,
+        server: str | Iterable,
+        params: Dict[str, Any],
+        backend: "ValkeyCache",
     ) -> None:
         self._backend = backend
         self._server = server
@@ -402,7 +408,7 @@ class DefaultClient:
 
         return bool(client.pexpireat(key, when))
 
-    def lock(
+    def get_lock(
         self,
         key: KeyT,
         version: int | None = None,
@@ -423,6 +429,9 @@ class DefaultClient:
             blocking_timeout=blocking_timeout,
             thread_local=thread_local,
         )
+
+    # TODO: delete this in future releases
+    lock = get_lock
 
     def delete(
         self,
@@ -532,12 +541,12 @@ class DefaultClient:
         return value
 
     def _decode_iterable_result(
-        self, result: Any, covert_to_set: bool = True
+        self, result: Any, convert_to_set: bool = True
     ) -> List[Any] | Any | None:
         if result is None:
             return None
         if isinstance(result, list):
-            if covert_to_set:
+            if convert_to_set:
                 return {self.decode(value) for value in result}
             return [self.decode(value) for value in result]
         return self.decode(result)
@@ -547,7 +556,7 @@ class DefaultClient:
         keys: Iterable[KeyT],
         version: int | None = None,
         client: Valkey | Any | None = None,
-    ) -> OrderedDict:
+    ) -> dict:
         """
         Retrieve many keys.
         """
@@ -904,7 +913,7 @@ class DefaultClient:
     def smismember(
         self,
         key: KeyT,
-        *members: int | float | str | bytes,
+        *members: Any,
         version: int | None = None,
         client: Valkey | Any | None = None,
     ) -> List[bool]:
@@ -919,7 +928,7 @@ class DefaultClient:
     def sismember(
         self,
         key: KeyT,
-        member: int | float | str | bytes,
+        member: Any,
         version: int | None = None,
         client: Valkey | Any | None = None,
     ) -> bool:
@@ -984,7 +993,7 @@ class DefaultClient:
 
         key = self.make_key(key, version=version)
         result = client.srandmember(key, count)
-        return self._decode_iterable_result(result, covert_to_set=False)
+        return self._decode_iterable_result(result, convert_to_set=False)
 
     def srem(
         self,
@@ -1079,9 +1088,9 @@ class DefaultClient:
             getattr(settings, "DJANGO_VALKEY_CLOSE_CONNECTION", False),
         )
         if close_flag:
-            self.do_close_clients()
+            self._close()
 
-    def do_close_clients(self) -> None:
+    def _close(self) -> None:
         """
         default implementation: Override in custom client
         """
