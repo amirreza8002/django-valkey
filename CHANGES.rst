@@ -1,3 +1,22 @@
+Version 0.0.17
+--------------
+
+- Added migration guide to documents
+
+- changed documentation setup
+
+- added RESP3 documentation
+
+- changes in README.rst
+
+- cleaning up the codebase
+
+- fixed some test settings
+
+- major internal refactoring
+
+- renamed ``lock()`` to ``get_lock()``, but the old form is still available.
+
 Version 0.0.15
 --------------
 
