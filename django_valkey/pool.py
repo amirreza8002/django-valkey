@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 from django.conf import settings
@@ -9,70 +9,14 @@ from valkey.connection import ConnectionPool, DefaultParser
 from valkey.sentinel import Sentinel
 from valkey._parsers.url_parser import to_bool
 
+from django_valkey.base_pool import BaseConnectionPool
 
-class ConnectionFactory:
-    # Store connection pool by cache backend options.
-    #
-    # _pools is a process-global, as otherwise _pools is cleared every time
-    # ConnectionFactory is instantiated, as Django creates new cache client
-    # (DefaultClient) instance for every request.
 
-    _pools: Dict[str, ConnectionPool | Any] = {}
+class ConnectionFactory(BaseConnectionPool[Valkey, ConnectionPool]):
+    path_pool_cls = "valkey.connection.ConnectionPool"
+    path_base_cls = "valkey.client.Valkey"
 
-    def __init__(self, options: dict):
-        pool_cls_path = options.get(
-            "CONNECTION_POOL_CLASS", "valkey.connection.ConnectionPool"
-        )
-        self.pool_cls: ConnectionPool | Any = import_string(pool_cls_path)
-        self.pool_cls_kwargs = options.get("CONNECTION_POOL_KWARGS", {})
-
-        base_client_cls_path = options.get("BASE_CLIENT_CLASS", "valkey.client.Valkey")
-        self.base_client_cls: Valkey | Any = import_string(base_client_cls_path)
-        self.base_client_cls_kwargs = options.get("BASE_CLIENT_KWARGS", {})
-
-        self.options = options
-
-    def make_connection_params(self, url: str | None) -> dict:
-        """
-        Given a main connection parameters, build a complete
-        dict of connection parameters.
-        """
-
-        kwargs = {
-            "url": url,
-            "parser_class": self.get_parser_cls(),
-        }
-
-        socket_timeout = self.options.get("SOCKET_TIMEOUT", None)
-        # TODO: do we need to check for existence?
-        if socket_timeout:
-            if not isinstance(socket_timeout, (int, float)):
-                error_message = "Socket timeout should be float or integer"
-                raise ImproperlyConfigured(error_message)
-            kwargs["socket_timeout"] = socket_timeout
-
-        socket_connect_timeout = self.options.get("SOCKET_CONNECT_TIMEOUT", None)
-        if socket_connect_timeout:
-            if not isinstance(socket_connect_timeout, (int, float)):
-                error_message = "Socket connect timeout should be float or integer"
-                raise ImproperlyConfigured(error_message)
-            kwargs["socket_connect_timeout"] = socket_connect_timeout
-
-        password = self.options.get("PASSWORD", None)
-        if password:
-            kwargs["password"] = password
-
-        return kwargs
-
-    def connect(self, url: str) -> Valkey | Any:
-        """
-        Given a basic connection parameters,
-        return a new connection.
-        """
-        params = self.make_connection_params(url)
-        return self.get_connection(params)
-
-    def disconnect(self, connection: Valkey) -> None:
+    def disconnect(self, connection: type[Valkey] | type) -> None:
         """
         Given a not null client connection it disconnects from the Valkey server.
 
@@ -80,55 +24,11 @@ class ConnectionFactory:
         """
         connection.connection_pool.disconnect()
 
-    def get_connection(self, params: dict) -> Valkey | Any:
-        """
-        Given a now preformatted params, return a
-        new connection.
-
-        The default implementation uses a cached pools
-        for create new connection.
-        """
-        pool = self.get_or_create_connection_pool(params)
-        return self.base_client_cls(connection_pool=pool, **self.base_client_cls_kwargs)
-
-    def get_parser_cls(self):
+    def get_parser_cls(self) -> type[DefaultParser] | type:
         cls = self.options.get("PARSER_CLASS", None)
         if cls is None:
             return DefaultParser
         return import_string(cls)
-
-    def get_or_create_connection_pool(
-        self, params: dict
-    ) -> dict[str, ConnectionPool | Any]:
-        """
-        Given a connection parameters and return a new
-        or cached connection pool for them.
-
-        Reimplement this method if you want distinct
-        connection pool instance caching behavior.
-        """
-        key: str = params["url"]
-        if key not in self._pools:
-            self._pools[key] = self.get_connection_pool(params)
-        return self._pools[key]
-
-    def get_connection_pool(self, params: dict) -> ConnectionPool | Any:
-        """
-        Given a connection parameters, return a new
-        connection pool for them.
-
-        Overwrite this method if you want a custom
-        behavior on creating connection pool.
-        """
-        cp_params = params
-        cp_params.update(self.pool_cls_kwargs)
-        pool = self.pool_cls.from_url(**cp_params)
-
-        if pool.connection_kwargs.get("password", None) is None:
-            pool.connection_kwargs["password"] = params.get("password", None)
-            pool.reset()
-
-        return pool
 
 
 class SentinelConnectionFactory(ConnectionFactory):
@@ -179,7 +79,7 @@ class SentinelConnectionFactory(ConnectionFactory):
 
 def get_connection_factory(
     path: str | None = None, options: dict | None = None
-) -> ConnectionFactory | Any:
+) -> ConnectionFactory | SentinelConnectionFactory | Any:
     if path is None:
         path = getattr(
             settings,
@@ -191,4 +91,4 @@ def get_connection_factory(
         path = opt_conn_factory
 
     cls = import_string(path)
-    return cls(options or {})
+    return cls(options)
