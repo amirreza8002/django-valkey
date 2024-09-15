@@ -19,6 +19,7 @@ from django_valkey.util import CacheKey
 
 if TYPE_CHECKING:
     from django_valkey.async_cache.cache import AsyncValkeyCache
+    from django_valkey.async_cache.pool import AsyncConnectionFactory, AsyncSentinelConnectionFactory
 
 
 async def glove_escape(s: str) -> str:
@@ -55,7 +56,7 @@ class AsyncDefaultClient:
             "DJANGO_VALKEY_CONNECTION_FACTORY",
             "django_valkey.async_cache.pool.AsyncConnectionFactory",
         )
-        self.connection_factory = pool.get_connection_factory(
+        self.connection_factory: AsyncConnectionFactory | AsyncSentinelConnectionFactory | Any = pool.get_connection_factory(
             options=self._options, path=self._connection_factory
         )
 
