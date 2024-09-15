@@ -44,6 +44,10 @@ Requirements
 User guide
 ----------
 
+Documentation
+~~~~~~~~~~~~~
+check out our `Docs <https://django-valkey.readthedocs.io/en/latest/>`_ for a complete explanation
+
 Installation
 ~~~~~~~~~~~~
 
@@ -74,9 +78,7 @@ Install 3rd party compression
     python -m pip install django-valkey[brotli]
 
 
-Documentation
-~~~~~~~~~~~~~
-check out our `Docs <https://django-valkey.readthedocs.io/en/latest/>`_ for a complete explanation
+
 
 
 Contribution
