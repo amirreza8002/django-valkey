@@ -1,3 +1,14 @@
+Version 0.1.2
+-------------
+
+- Added an async backend
+
+- Added an async client
+
+- Added two async connection factories
+
+- Added documentation for async client
+
 Version 0.0.17
 --------------
 
