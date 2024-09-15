@@ -331,32 +331,32 @@ class TestAsyncDjangoValkeyCache:
         # if isinstance(cache.client, AsyncHerdClient):
         #     pytest.skip("HerdClient doesn't support incr")
 
-            await cache.aset("num", 1, timeout=None)
+        await cache.aset("num", 1, timeout=None)
 
-            await cache.aincr("num")
-            res = await cache.aget("num")
-            assert res == 2
+        await cache.aincr("num")
+        res = await cache.aget("num")
+        assert res == 2
 
-            await cache.aincr("num", 10)
-            res = await cache.aget("num")
-            assert res == 12
+        await cache.aincr("num", 10)
+        res = await cache.aget("num")
+        assert res == 12
 
-            # max 64-bit signed int
-            await cache.aset("num", 9223372036854775807, timeout=None)
+        # max 64-bit signed int
+        await cache.aset("num", 9223372036854775807, timeout=None)
 
-            await cache.aincr("num")
-            res = await cache.aget("num")
-            assert res == 9223372036854775808
+        await cache.aincr("num")
+        res = await cache.aget("num")
+        assert res == 9223372036854775808
 
-            await cache.aincr("num", 2)
-            res = await cache.aget("num")
-            assert res == 9223372036854775810
+        await cache.aincr("num", 2)
+        res = await cache.aget("num")
+        assert res == 9223372036854775810
 
-            await cache.aset("num", 3, timeout=None)
+        await cache.aset("num", 3, timeout=None)
 
-            await cache.aincr("num", 2)
-            res = await cache.aget("num")
-            assert res == 5
+        await cache.aincr("num", 2)
+        res = await cache.aget("num")
+        assert res == 5
 
     async def test_incr_error(self, cache: AsyncValkeyCache):
         # if isinstance(cache.client, AsyncHerdClient):
