@@ -2,7 +2,7 @@ import datetime
 import threading
 import time
 from datetime import timedelta
-from typing import Iterable, List, Union, cast
+from typing import Iterable, List, cast
 from unittest.mock import patch
 
 import pytest
@@ -104,7 +104,7 @@ class TestDjangoValkeyCache:
         if isinstance(cache.client._serializer, (JSONSerializer, MSGPackSerializer)):
             # JSONSerializer and MSGPackSerializer use the isoformat for
             # datetimes.
-            now_dt: Union[str, datetime.datetime] = datetime.datetime.now().isoformat()
+            now_dt: str | datetime.datetime = datetime.datetime.now().isoformat()
         else:
             now_dt = datetime.datetime.now()
 
