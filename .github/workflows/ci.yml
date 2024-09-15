@@ -77,19 +77,20 @@ jobs:
           tests/wait_for_valkey.sh $VALKEY_SENTINEL 26379
 
           
-          poetry run pytest --ds=tests.settings.sqlite
-          poetry run pytest --ds=tests.settings.sqlite_herd
-          poetry run pytest --ds=tests.settings.sqlite_json
-          poetry run pytest --ds=tests.settings.sqlite_lz4
-          poetry run pytest --ds=tests.settings.sqlite_msgpack
-          poetry run pytest --ds=tests.settings.sqlite_sentinel
-          poetry run pytest --ds=tests.settings.sqlite_sentinel_opts
-          poetry run pytest --ds=tests.settings.sqlite_sharding
-          poetry run pytest --ds=tests.settings.sqlite_usock
-          poetry run pytest --ds=tests.settings.sqlite_zlib
-          poetry run pytest --ds=tests.settings.sqlite_zstd
-          poetry run pytest --ds=tests.settings.sqlite_gzip
-          poetry run pytest --ds=tests.settings.sqlite_bz2
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_herd
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_json
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_lz4
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_msgpack
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_sentinel
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_sentinel_opts
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_sharding
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_usock
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_zlib
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_zstd
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_gzip
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_bz2
+          poetry run pytest tests/tests_async/*.py --ds=tests.settings.sqlite_async
 
         env:
           DJANGO: ${{ matrix.django-version }}
