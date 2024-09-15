@@ -405,7 +405,7 @@ class ShardClient(DefaultClient):
                 res += connection.delete(*keys)
         return res
 
-    def do_close_clients(self) -> None:
+    def _close(self) -> None:
         for client in self._server_dict.values():
             self.disconnect(client=client)
 
