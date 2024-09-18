@@ -2,6 +2,9 @@
 Configure The Async Client
 ==========================
 
+**Important**: the async client is not compatible with django's cache middlewares.
+if you need the middlewares, consider using the sync client or implement a new middleware.
+
 as of now, we have one async client available, working on more tho.
 
 to setup the async client you can configure your settings file to look like this:

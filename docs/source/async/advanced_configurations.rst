@@ -6,6 +6,8 @@ most of the subject discussed in :doc:`../configure/advanced_configurations` app
 
 also all the compressor details we talked about in :doc:`../configure/compressors` work as is in async mode
 
+**Important**: the async clients are not compatible with django's cache middleware.
+if you need those middlewares, consider using a sync client or implement a new middleware
 
 Clients
 #######
@@ -18,7 +20,7 @@ the ``AsyncDefaultClient`` is configured by default by ``AsyncValkeyCache``, so 
 .. code-block:: python
 
     CACHES = {
-        "default": {
+        "async": {
             "BACKEND": "path.to.backend",
             "LOCATION": [
                 "valkey://user:pass@127.0.0.1:6379",
@@ -41,7 +43,7 @@ the default connection factory is ``AsyncConnectionFactory``, so if you are usin
 .. code-block:: python
 
     CACHES = {
-        "default": {
+        "async": {
             ...
             "OPTIONS": {
                 "CONNECTION_FACTORY": "django_valkey.async_cache.pool.AsyncSentinelConnectionFactory"

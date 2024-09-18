@@ -10,7 +10,7 @@ most subject discussed in :doc:`../commands/valkey_native_commands` also applies
 
     from django.core.cache import cache
 
-    await cache.get("foo")
+    await cache.aget("foo")
 
 
 the method names are the same as the sync ones discussed in :doc:`../commands/valkey_native_commands`, and the API is almost the same.
@@ -21,7 +21,7 @@ the only difference is that the async backend returns a coroutine or async gener
 
     from django.core.cache import cache
 
-    async with contextlib.aclosing(cache.iter_keys("foo*")) as keys:
+    async with contextlib.aclosing(cache.aiter_keys("foo*")) as keys:
         async for k in keys:
             result.add(k)
 
