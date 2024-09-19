@@ -18,6 +18,7 @@ from django_valkey.exceptions import CompressorError, ConnectionInterrupted
 from django_valkey.util import CacheKey
 
 if TYPE_CHECKING:
+    from valkey.asyncio.lock import Lock
     from django_valkey.async_cache.cache import AsyncValkeyCache
     from django_valkey.async_cache.pool import (
         AsyncConnectionFactory,
@@ -198,7 +199,7 @@ class AsyncDefaultClient:
                         return bool(
                             await self.delete(key, client=client, version=version)
                         )
-                return bool(await client.set(nkey, nvalue, nx=nx, px=timeout, xx=xx))
+                return await client.set(nkey, nvalue, nx=nx, px=timeout, xx=xx)
 
             except _main_exceptions as e:
                 if (
@@ -373,7 +374,7 @@ class AsyncDefaultClient:
         blocking_timeout: float | None = None,
         client: AValkey | Any | None = None,
         thread_local: bool = True,
-    ):
+    ) -> "Lock":
         """Returns a Lock object, the object then should be used in an async context manager"""
 
         client = await self.get_client(write=True, client=client)
@@ -461,7 +462,7 @@ class AsyncDefaultClient:
 
     adelete_many = delete_many
 
-    async def clear(self, client: AValkey | Any | None = None) -> None:
+    async def clear(self, client: AValkey | Any | None = None) -> bool:
         """
         Flush all cache keys.
         """
@@ -469,7 +470,7 @@ class AsyncDefaultClient:
         client = await self.get_client(write=True, client=client)
 
         try:
-            await client.flushdb()
+            return await client.flushdb()
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 

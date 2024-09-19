@@ -29,7 +29,9 @@ from django_valkey.serializers.pickle import PickleSerializer
 from django_valkey.util import CacheKey
 
 if TYPE_CHECKING:
+    from valkey.lock import Lock
     from django_valkey.cache import ValkeyCache
+
 
 _main_exceptions = (TimeoutError, ResponseError, ConnectionError, socket.timeout)
 
@@ -218,7 +220,7 @@ class DefaultClient:
                         # than to set it and then expire in a pipeline
                         return bool(self.delete(key, client=client, version=version))
 
-                return bool(client.set(nkey, nvalue, nx=nx, px=timeout, xx=xx))
+                return client.set(nkey, nvalue, nx=nx, px=timeout, xx=xx)
             except _main_exceptions as e:
                 if (
                     not original_client
@@ -388,7 +390,7 @@ class DefaultClient:
         # TODO: see if the casting is necessary
         # for some strange reason mypy complains,
         # saying that timeout type is float | timedelta
-        return bool(client.pexpire(key, timeout))  # type: ignore
+        return client.pexpire(key, timeout)
 
     def pexpire_at(
         self,
@@ -406,7 +408,7 @@ class DefaultClient:
 
         key = self.make_key(key, version=version)
 
-        return bool(client.pexpireat(key, when))
+        return client.pexpireat(key, when)
 
     def get_lock(
         self,
@@ -417,7 +419,7 @@ class DefaultClient:
         blocking_timeout: float | None = None,
         client: Valkey | Any | None = None,
         thread_local: bool = True,
-    ):
+    ) -> "Lock":
         if client is None:
             client = self.get_client(write=True)
 
@@ -503,7 +505,7 @@ class DefaultClient:
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 
-    def clear(self, client: Valkey | Any | None = None) -> None:
+    def clear(self, client: Valkey | Any | None = None) -> bool:
         """
         Flush all cache keys.
         """
@@ -512,7 +514,7 @@ class DefaultClient:
             client = self.get_client(write=True)
 
         try:
-            client.flushdb()
+            return client.flushdb()
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 

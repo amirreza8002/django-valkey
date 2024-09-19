@@ -39,7 +39,7 @@ class TestAsyncDjangoValkeyCache:
         assert bool(res) is True
 
         res = await cache.set("test_key_nx", 2, nx=True)
-        assert res is False
+        assert res is None
         res = await cache.get("test_key_nx")
         assert res == 1
 
@@ -58,7 +58,7 @@ class TestAsyncDjangoValkeyCache:
         # test that timeout will not affect key, if it was there
         await cache.aset("test_key_nx", 1)
         res = await cache.aset("test_key_nx", 2, timeout=2, nx=True)
-        assert res is False
+        assert res is None
         await asyncio.sleep(3)
         res = await cache.aget("test_key_nx")
         assert res == 1
@@ -184,7 +184,7 @@ class TestAsyncDjangoValkeyCache:
     async def test_set_add(self, cache: AsyncValkeyCache):
         await cache.aset("add_key", "Initial value")
         res = await cache.aadd("add_key", "New value")
-        assert res is False
+        assert res is None
 
         res = await cache.aget("add_key")
         assert res == "Initial value"

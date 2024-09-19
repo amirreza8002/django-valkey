@@ -40,7 +40,7 @@ class TestDjangoValkeyCache:
         assert bool(res) is True
         # test that second set will have
         res = cache.set("test_key_nx", 2, nx=True)
-        assert res is False
+        assert res is None
         res = cache.get("test_key_nx")
         assert res == 1
 
@@ -59,7 +59,7 @@ class TestDjangoValkeyCache:
         # test that timeout will not affect key, if it was there
         cache.set("test_key_nx", 1)
         res = cache.set("test_key_nx", 2, timeout=2, nx=True)
-        assert res is False
+        assert res is None
         time.sleep(3)
         res = cache.get("test_key_nx")
         assert res == 1
@@ -181,7 +181,7 @@ class TestDjangoValkeyCache:
     def test_set_add(self, cache: ValkeyCache):
         cache.set("add_key", "Initial value")
         res = cache.add("add_key", "New value")
-        assert res is False
+        assert res is None
 
         res = cache.get("add_key")
         assert res == "Initial value"
