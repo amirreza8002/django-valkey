@@ -1,83 +1,28 @@
 import contextlib
-import random
 from contextlib import suppress
-from typing import Any, Iterable, Set, cast, TYPE_CHECKING, AsyncGenerator
+from typing import Any, Set, cast, TYPE_CHECKING, AsyncGenerator
 
 from django.conf import settings
-from django.core.cache.backends.base import DEFAULT_TIMEOUT, get_key_func
-from django.core.exceptions import ImproperlyConfigured
-from django.utils.module_loading import import_string
+from django.core.cache.backends.base import DEFAULT_TIMEOUT
 
 from valkey.asyncio import Valkey as AValkey
 from valkey.exceptions import ResponseError
 from valkey.typing import PatternT
 
-from django_valkey import pool
-from django_valkey.client.default import special_re, _main_exceptions, glob_escape
+from django_valkey.base_client import (
+    BaseClient,
+    _main_exceptions,
+    glob_escape,
+)
 from django_valkey.exceptions import CompressorError, ConnectionInterrupted
 from django_valkey.util import CacheKey
 
 if TYPE_CHECKING:
     from valkey.asyncio.lock import Lock
-    from django_valkey.async_cache.cache import AsyncValkeyCache
-    from django_valkey.async_cache.pool import (
-        AsyncConnectionFactory,
-        AsyncSentinelConnectionFactory,
-    )
 
 
-async def glove_escape(s: str) -> str:
-    return special_re.sub(r"[\1]", s)
-
-
-class AsyncDefaultClient:
-    def __init__(
-        self,
-        server: str | Iterable,
-        params: dict[str, Any],
-        backend: "AsyncValkeyCache",
-    ) -> None:
-        self._backend = backend
-        self._server = server
-        if not self._server:
-            error_message = "Missing connections string"
-            raise ImproperlyConfigured(error_message)
-        if not isinstance(self._server, (list, tuple, set)):
-            self._server = self._server.split(",")
-
-        self.params = params
-
-        self.reverse_key = get_key_func(
-            params.get("REVERSE_KEY_FUNCTION")
-            or "django_valkey.util.default_reverse_key"
-        )
-
-        self._clients = [None] * len(self._server)
-        self._options = params.get("OPTIONS", {})
-        self._replica_read_only = self._options.get("REPLICA_READ_ONLY", True)
-
-        self._connection_factory = self._options.get(
-            "DJANGO_VALKEY_CONNECTION_FACTORY",
-            "django_valkey.async_cache.pool.AsyncConnectionFactory",
-        )
-        self.connection_factory: (
-            AsyncConnectionFactory | AsyncSentinelConnectionFactory | Any
-        ) = pool.get_connection_factory(
-            options=self._options, path=self._connection_factory
-        )
-
-        serializer_path = self._options.get(
-            "SERIALIZER", "django_valkey.serializers.pickle.PickleSerializer"
-        )
-        serializer_cls: type = import_string(serializer_path)
-
-        compressor_path = self._options.get(
-            "COMPRESSOR", "django_valkey.compressors.identity.IdentityCompressor"
-        )
-        compressor_cls: type = import_string(compressor_path)
-
-        self._serializer = serializer_cls(options=self._options)
-        self._compressor = compressor_cls(options=self._options)
+class AsyncDefaultClient(BaseClient[AValkey]):
+    connection_factory_path = "django_valkey.async_cache.pool.AsyncConnectionFactory"
 
     def __contains__(self, item) -> bool:
         c = yield from self.__contains(item)
@@ -85,14 +30,6 @@ class AsyncDefaultClient:
 
     async def __contains(self, key) -> bool:
         yield await self.has_key(key)
-
-    async def _has_compression_enabled(self) -> bool:
-        return (
-            self._options.get(
-                "COMPRESSOR", "django_valkey.compressors.IdentityCompressor"
-            )
-            != "django_valkey.compressors.IdentityCompressor"
-        )
 
     async def _decode_iterable_result(
         self, result: Any, convert_to_set: bool = True
@@ -105,31 +42,17 @@ class AsyncDefaultClient:
             return [await self.decode(value) for value in result]
         return await self.decode(result)
 
-    async def get_next_client_index(
-        self, write: bool = True, tried: list[int] | None = None
-    ) -> int:
-        if write or len(self._server) == 1:
-            return 0
-
-        if tried is None:
-            tried = []
-
-        if tried and len(tried) < len(self._server):
-            not_tried = [i for i in range(0, len(self._server)) if i not in tried]
-            return random.choice(not_tried)
-
-        return random.randint(1, len(self._server) - 1)
+    async def _get_client(self, write=True, tried=None, client=None):
+        if client:
+            return client
+        return await self.get_client(write, tried)
 
     async def get_client(
         self,
         write: bool = True,
         tried: list[int] | None = None,
-        client: AValkey | Any | None = None,
     ) -> AValkey | Any:
-        if client:
-            return client
-
-        index = await self.get_next_client_index(write=write, tried=tried)
+        index = self.get_next_client_index(write=write, tried=tried)
 
         if self._clients[index] is None:
             self._clients[index] = await self.connect(index)
@@ -139,7 +62,7 @@ class AsyncDefaultClient:
     async def get_client_with_index(
         self, write: bool = True, tried: list[int] | None = None
     ) -> tuple[AValkey, int]:
-        index = await self.get_next_client_index(write=write, tried=tried)
+        index = self.get_next_client_index(write=write, tried=tried)
 
         if self._clients[index] is None:
             self._clients[index] = await self.connect(index)
@@ -222,7 +145,7 @@ class AsyncDefaultClient:
         version: int | None = None,
         client: AValkey | None | Any = None,
     ) -> int:
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
 
         new_key, old_key, value, ttl, version = await self._incr_version(
             key, delta, version, client
@@ -280,7 +203,7 @@ class AsyncDefaultClient:
         version: int | None = None,
         client: AValkey | None | Any = None,
     ) -> Any:
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
 
         key = await self.make_key(key, version=version)
 
@@ -300,7 +223,7 @@ class AsyncDefaultClient:
     async def persist(
         self, key, version: int | None = None, client: AValkey | Any | None = None
     ) -> bool:
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
         key = await self.make_key(key, version=version)
 
         return await client.persist(key)
@@ -317,7 +240,7 @@ class AsyncDefaultClient:
         if timeout is DEFAULT_TIMEOUT:
             timeout = self._backend.default_timeout
 
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
 
         key = await self.make_key(key, version=version)
 
@@ -328,7 +251,7 @@ class AsyncDefaultClient:
     async def expire_at(
         self, key, when, version: int | None = None, client: AValkey | Any | None = None
     ) -> bool:
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
 
         key = await self.make_key(key, version=version)
 
@@ -346,7 +269,7 @@ class AsyncDefaultClient:
         if timeout is DEFAULT_TIMEOUT:
             timeout = self._backend.default_timeout
 
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
 
         key = await self.make_key(key, version=version)
 
@@ -357,7 +280,7 @@ class AsyncDefaultClient:
     async def pexpire_at(
         self, key, when, version: int | None = None, client: AValkey | Any | None = None
     ) -> bool:
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
 
         key = await self.make_key(key, version=version)
 
@@ -377,7 +300,7 @@ class AsyncDefaultClient:
     ) -> "Lock":
         """Returns a Lock object, the object then should be used in an async context manager"""
 
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
 
         key = await self.make_key(key, version=version)
 
@@ -399,7 +322,7 @@ class AsyncDefaultClient:
         prefix: str | None = None,
         client: AValkey | Any | None = None,
     ) -> int:
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
 
         try:
             return await client.delete(
@@ -421,7 +344,7 @@ class AsyncDefaultClient:
         """
         Remove all keys matching a pattern.
         """
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
 
         pattern = await self.make_pattern(pattern, version=version, prefix=prefix)
 
@@ -453,7 +376,7 @@ class AsyncDefaultClient:
         if not keys:
             return 0
 
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
 
         try:
             return await client.delete(*keys)
@@ -467,7 +390,7 @@ class AsyncDefaultClient:
         Flush all cache keys.
         """
 
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
 
         try:
             return await client.flushdb()
@@ -510,7 +433,7 @@ class AsyncDefaultClient:
         if not keys:
             return {}
 
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
 
         recovered_data = {}
 
@@ -537,7 +460,7 @@ class AsyncDefaultClient:
         version: int | None = None,
         client: AValkey | Any | None = None,
     ) -> None:
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
 
         try:
             pipeline = await client.pipeline()
@@ -557,7 +480,7 @@ class AsyncDefaultClient:
         client: AValkey | Any | None = None,
         ignoree_key_check: bool = False,
     ) -> int:
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
         key = await self.make_key(key, version=version)
 
         try:
@@ -646,7 +569,7 @@ class AsyncDefaultClient:
         Executes TTL valkey command and return the "time-to-live" of specified key.
         If key is a non-volatile key, it returns None.
         """
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
         key = await self.make_key(key, version=version)
         if not await client.exists(key):
             return 0
@@ -668,7 +591,7 @@ class AsyncDefaultClient:
         Executes PTTL valkey command and return the "time-to-live" of specified key.
         If key is a non-volatile key, it returns None.
         """
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
 
         key = await self.make_key(key, version=version)
         if not await client.exists(key):
@@ -691,7 +614,7 @@ class AsyncDefaultClient:
         """
         Test if key exists.
         """
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
 
         key = await self.make_key(key, version=version)
         try:
@@ -712,7 +635,7 @@ class AsyncDefaultClient:
         Same as keys, but uses cursors
         for make memory efficient keys iteration.
         """
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
         pattern = await self.make_pattern(search, version=version)
         async with contextlib.aclosing(
             client.scan_iter(match=pattern, count=itersize)
@@ -728,7 +651,7 @@ class AsyncDefaultClient:
         version: int | None = None,
         client: AValkey | Any | None = None,
     ) -> list[Any]:
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
 
         pattern = await self.make_pattern(search, version=version)
         try:
@@ -778,7 +701,7 @@ class AsyncDefaultClient:
         version: int | None = None,
         client: AValkey | Any | None = None,
     ) -> int:
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
         key = await self.make_key(key, version=version)
         encoded_values = [await self.encode(value) for value in values]
 
@@ -789,7 +712,7 @@ class AsyncDefaultClient:
     async def scard(
         self, key, version: int | None = None, client: AValkey | Any | None = None
     ) -> int:
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
         key = await self.make_key(key, version=version)
         return await client.scard(key)
 
@@ -798,7 +721,7 @@ class AsyncDefaultClient:
     async def sdiff(
         self, *keys, version: int | None = None, client: AValkey | Any | None = None
     ) -> Set[Any]:
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
         nkeys = [await self.make_key(key, version=version) for key in keys]
         return {await self.decode(value) for value in await client.sdiff(*nkeys)}
 
@@ -812,7 +735,7 @@ class AsyncDefaultClient:
         version_keys: int | None = None,
         client: AValkey | Any | None = None,
     ) -> int:
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
         dest = await self.make_key(dest, version=version_dest)
         nkeys = [await self.make_key(key, version=version_keys) for key in keys]
         return await client.sdiffstore(dest, *nkeys)
@@ -822,7 +745,7 @@ class AsyncDefaultClient:
     async def sinter(
         self, *keys, version: int | None = None, client: AValkey | Any | None = None
     ) -> Set[Any]:
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
         nkeys = [await self.make_key(key, version=version) for key in keys]
         return {await self.decode(value) for value in await client.sinter(*nkeys)}
 
@@ -835,7 +758,7 @@ class AsyncDefaultClient:
         version: int | None = None,
         client: AValkey | Any | None = None,
     ) -> int:
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
         dest = await self.make_key(dest, version=version)
         nkeys = [await self.make_key(key, version=version) for key in keys]
 
@@ -850,7 +773,7 @@ class AsyncDefaultClient:
         version: int | None = None,
         client: AValkey | Any | None = None,
     ) -> list[bool]:
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
 
         key = await self.make_key(key, version=version)
         encoded_members = [await self.encode(member) for member in members]
@@ -866,7 +789,7 @@ class AsyncDefaultClient:
         version: int | None = None,
         client: AValkey | Any | None = None,
     ) -> bool:
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
 
         key = await self.make_key(key, version=version)
         member = await self.encode(member)
@@ -877,7 +800,7 @@ class AsyncDefaultClient:
     async def smembers(
         self, key, version: int | None = None, client: AValkey | Any | None = None
     ) -> Set[Any]:
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
 
         key = await self.make_key(key, version=version)
         return {await self.decode(value) for value in await client.smembers(key)}
@@ -892,7 +815,7 @@ class AsyncDefaultClient:
         version: int | None = None,
         client: AValkey | Any | None = None,
     ) -> bool:
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
         source = await self.make_key(source, version=version)
         destination = await self.make_key(destination, version=version)
         member = await self.encode(member)
@@ -907,7 +830,7 @@ class AsyncDefaultClient:
         version: int | None = None,
         client: AValkey | Any | None = None,
     ) -> Set | Any:
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
         nkey = await self.make_key(key, version=version)
         result = await client.spop(nkey, count)
         return await self._decode_iterable_result(result)
@@ -921,7 +844,7 @@ class AsyncDefaultClient:
         version: int | None = None,
         client: AValkey | Any | None = None,
     ) -> list | Any:
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
         key = await self.make_key(key, version=version)
         result = await client.srandmember(key, count)
         return await self._decode_iterable_result(result, convert_to_set=False)
@@ -935,7 +858,7 @@ class AsyncDefaultClient:
         version: int | None = None,
         client: AValkey | Any | None = None,
     ) -> int:
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
 
         key = await self.make_key(key, version=version)
         nmembers = [await self.encode(member) for member in members]
@@ -952,11 +875,11 @@ class AsyncDefaultClient:
         client: AValkey | Any | None = None,
     ) -> Set[Any]:
         # TODO check this is correct
-        if await self._has_compression_enabled() and match:
+        if self._has_compression_enabled() and match:
             error_message = "Using match with compression is not supported."
             raise ValueError(error_message)
 
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
 
         key = await self.make_key(key, version=version)
         cursor, result = await client.sscan(
@@ -976,11 +899,11 @@ class AsyncDefaultClient:
         version: int | None = None,
         client: AValkey | Any | None = None,
     ):
-        if await self._has_compression_enabled() and match:
+        if self._has_compression_enabled() and match:
             error_message = "Using match with compression is not supported."
             raise ValueError(error_message)
 
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
 
         key = await self.make_key(key, version=version)
 
@@ -1002,7 +925,7 @@ class AsyncDefaultClient:
         version: int | None = None,
         client: AValkey | Any | None = None,
     ) -> Set[Any]:
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
 
         nkeys = [await self.make_key(key, version=version) for key in keys]
         return {await self.decode(value) for value in await client.sunion(*nkeys)}
@@ -1016,7 +939,7 @@ class AsyncDefaultClient:
         version: int | None = None,
         client: AValkey | Any | None = None,
     ) -> int:
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
         destination = await self.make_key(destination, version=version)
         encoded_keys = [await self.make_key(key, version=version) for key in keys]
         return await client.sunionstore(destination, *encoded_keys)
@@ -1056,7 +979,7 @@ class AsyncDefaultClient:
         if timeout is DEFAULT_TIMEOUT:
             timeout = self._backend.default_timeout
 
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
 
         key = await self.make_key(key, version=version)
         if timeout is None:
@@ -1080,7 +1003,7 @@ class AsyncDefaultClient:
         Sets the value of hash name at key to value.
         Returns the number of fields added to the hash.
         """
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
 
         nkey = await self.make_key(key, version)
         nvalue = await self.encode(value)
@@ -1100,7 +1023,7 @@ class AsyncDefaultClient:
         Remove keys from hash name.
         Returns the number of fields deleted from the hash.
         """
-        client = await self.get_client(write=True, client=client)
+        client = await self._get_client(write=True, client=client)
         nkey = await self.make_key(key, version=version)
         return await client.hdel(name, nkey)
 
@@ -1110,13 +1033,13 @@ class AsyncDefaultClient:
         """
         Return the number of items in hash name.
         """
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
         return await client.hlen(name)
 
     ahlen = hlen
 
     async def hkeys(self, name: str, client: AValkey | Any | None = None) -> list[Any]:
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
 
         try:
             return [self.reverse_key(k.decode()) for k in await client.hkeys(name)]
@@ -1135,7 +1058,7 @@ class AsyncDefaultClient:
         """
         Return True if key exists in hash name, else False.
         """
-        client = await self.get_client(write=False, client=client)
+        client = await self._get_client(write=False, client=client)
         nkey = await self.make_key(key, version=version)
         return await client.hexists(name, nkey)
 
