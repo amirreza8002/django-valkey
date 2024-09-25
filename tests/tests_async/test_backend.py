@@ -989,7 +989,7 @@ class TestAsyncDjangoValkeyCache:
         assert items == {"bar1", "bar2"}
 
     async def test_sscan_with_match(self, cache: AsyncValkeyCache):
-        if await cache.client._has_compression_enabled():
+        if cache.client._has_compression_enabled():
             pytest.skip("Compression is enabled, sscan with match is not supported")
         await cache.asadd("foo", "bar1", "bar2", "zoo")
         items = await cache.asscan("foo", match="zoo")
@@ -1004,7 +1004,7 @@ class TestAsyncDjangoValkeyCache:
         assert items == {"bar1", "bar2"}
 
     async def test_sscan_iter_with_match(self, cache: AsyncValkeyCache):
-        if await cache.client._has_compression_enabled():
+        if cache.client._has_compression_enabled():
             pytest.skip(
                 "Compression is enabled, sscan_iter with match is not supported"
             )
