@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 
 class AsyncDefaultClient(BaseClient[AValkey]):
-    connection_factory_path = "django_valkey.async_cache.pool.AsyncConnectionFactory"
+    CONNECTION_FACTORY_PATH = "django_valkey.async_cache.pool.AsyncConnectionFactory"
 
     def __contains__(self, item) -> bool:
         c = yield from self.__contains(item)
