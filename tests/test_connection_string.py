@@ -1,4 +1,8 @@
+from unittest.mock import patch
+
 import pytest
+from django.core.cache import caches
+from django.test import override_settings
 
 from django_valkey import pool
 
@@ -13,7 +17,7 @@ from django_valkey import pool
 )
 def test_connection_strings(connection_string: str):
     cf = pool.get_connection_factory(
-        path="django_valkey.pool.ConnectionFactory", options={}
+        options={"CONNECTION_FACTORY": "django_valkey.pool.ConnectionFactory"}
     )
     res = cf.make_connection_params(connection_string)
     assert res["url"] == connection_string
