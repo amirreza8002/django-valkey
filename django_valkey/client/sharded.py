@@ -7,7 +7,8 @@ from valkey import Valkey
 from valkey.exceptions import ConnectionError
 from valkey.typing import EncodableT, KeyT
 
-from django_valkey.client.default import DEFAULT_TIMEOUT, DefaultClient
+from django_valkey.base_client import DEFAULT_TIMEOUT
+from django_valkey.client.default import DefaultClient
 from django_valkey.exceptions import ConnectionInterrupted
 from django_valkey.hash_ring import HashRing
 

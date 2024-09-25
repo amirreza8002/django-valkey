@@ -9,7 +9,8 @@ from valkey import Valkey
 from valkey.exceptions import ConnectionError, ResponseError, TimeoutError
 from valkey.typing import KeyT, EncodableT
 
-from django_valkey.client.default import DEFAULT_TIMEOUT, DefaultClient
+from django_valkey.base_client import DEFAULT_TIMEOUT
+from django_valkey.client.default import DefaultClient
 from django_valkey.exceptions import ConnectionInterrupted
 
 _main_exceptions = (ConnectionError, ResponseError, TimeoutError, socket.timeout)
