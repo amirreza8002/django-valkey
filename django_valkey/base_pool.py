@@ -7,7 +7,7 @@ Pool = TypeVar("Pool")
 Base = TypeVar("Base")
 
 
-class BaseConnectionPool(Generic[Base, Pool]):
+class BaseConnectionFactory(Generic[Base, Pool]):
     # Store connection pool by cache backend options.
     #
     # _pools is a process-global, as otherwise _pools is cleared every time

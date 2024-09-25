@@ -9,10 +9,10 @@ from valkey.connection import ConnectionPool, DefaultParser
 from valkey.sentinel import Sentinel
 from valkey._parsers.url_parser import to_bool
 
-from django_valkey.base_pool import BaseConnectionPool, Base
+from django_valkey.base_pool import BaseConnectionFactory, Base
 
 
-class ConnectionFactory(BaseConnectionPool[Valkey, ConnectionPool]):
+class ConnectionFactory(BaseConnectionFactory[Valkey, ConnectionPool]):
     path_pool_cls = "valkey.connection.ConnectionPool"
     path_base_cls = "valkey.client.Valkey"
 
