@@ -1,8 +1,4 @@
-from unittest.mock import patch
-
 import pytest
-from django.core.cache import caches
-from django.test import override_settings
 
 from django_valkey import pool
 
