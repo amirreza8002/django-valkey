@@ -88,12 +88,8 @@ class SentinelConnectionFactory(ConnectionFactory):
 def get_connection_factory(
     path: str | None = None, options: dict | None = None
 ) -> ConnectionFactory | SentinelConnectionFactory | Any:
-    if path is None:
-        path = getattr(
-            settings,
-            "DJANGO_VALKEY_CONNECTION_FACTORY",
-            "django_valkey.pool.ConnectionFactory",
-        )
+
+    path = getattr(settings, "DJANGO_VALKEY_CONNECTION_FACTORY", path)
     opt_conn_factory = options.get("CONNECTION_FACTORY")
     if opt_conn_factory:
         path = opt_conn_factory
