@@ -1,3 +1,9 @@
+Version 0.1.4
+
+- Added BaseClient class
+
+- **BREAKING:** changed BaseConnectionPool to BaeConnectionFactory
+
 Version 0.1.3
 -------------
 
