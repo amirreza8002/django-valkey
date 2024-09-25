@@ -2,11 +2,11 @@
 Customizing django-valkey
 =========================
 
-The basics of how to intrduce your own classes to be used by django-valkeey has been discussed in length in :doc:`configure/advanced_configurations`.
+The basics of how to introduce your own classes to be used by django-valkey has been discussed in length in :doc:`configure/advanced_configurations`.
 
-in this section we're going to look at two base classes that django-valkey provides and you can use them to write your classes faster.
+in this section we're going to look at the base classes that django-valkey provides and you can use them to write your classes faster.
 
-django-valkey comes with two base classes: ``django_valkey.base.BaseValkeyCache`` and ``django_valkey.base_pool.BaseConnectionPool``.
+django-valkey comes with three base classes: ``django_valkey.base.BaseValkeyCache``, ``django_valkey.base_client.BaseClient`` and ``django_valkey.base_pool.BaseConnectionFactory``.
 
 BaseValkeyCache
 ###############
@@ -22,6 +22,8 @@ to inherit from this base class you can take the example of our own cache backen
 .. code-block:: python
 
     from valkey import Valkey
+
+    from django_valkey.base import BaseValkeyCache
     from django_valkey.client import DefaultClient
 
     class ValkeyCache(BaseValkeyCache[DefaultClient, Valkey]):
@@ -33,10 +35,33 @@ the class attribute defined in the example is **mandatory**, it is so we can hav
 ``BaseValkeyCache`` has both *sync* and *async* methods implemented, but there is no logic in them, most methods need to be overwritten.
 
 
-BaseConnectionPool
+BaseClient
+##########
+``BaseClient`` inherits from ``typing.Generic`` to make cleaner type hints.
+this class has all the logic necessary for a cache client (it is a copy of the old DefaultClient class), it finds the different servers and connects to them, add has all the commands that valkey supports.
+
+the ``typing.Generic`` needs a backend to be passed in, e.g: ``valkey.Valkey``
+
+the base class also needs the subclasses to have a ``CONNECTION_FACTORY_PATH`` class variable pointing to the connection factory class.
+
+an example code would look like this:
+
+.. code-block:: python
+
+    from valkey import Valkey
+
+    from django_valkey.base_client import BaseClient
+
+    class DefaultClient(BaseClient[Valkey]):
+        CONNECTION_FACTORY_PATH = "django_valkey.pool.ConnectionFactory"
+
+*note* that CONNECTION_FACTORY_PATH is only used if ``DJANGO_VALKEY_CONNECTION_FACTORY`` is not set.
+
+
+BaseConnectionFactory
 ##################
 
-the ``BaseConnectionPool`` inherits from ``typing.Generic`` to give more robust type hinting, and allow our four connection pools to have cleaner codebase.
+the ``BaseConnectionFactory`` inherits from ``typing.Generic`` to give more robust type hinting, and allow our four connection pools to have cleaner codebase.
 
 to inherit from this class you need to pass in the underlying backend that you are using and the connection pool, for example this is one of the connection pools in this project:
 
@@ -44,6 +69,8 @@ to inherit from this class you need to pass in the underlying backend that you a
 
     from valkey import Valkey
     from valkey.connection import ConnectionPool
+
+    from django_valkey.base_pool import BaseConnectionFactory
 
 
     class ConnectionFactory(BaseConnectionPool[Valkey, ConnectionPool]):
