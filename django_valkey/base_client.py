@@ -127,6 +127,11 @@ class BaseClient(Generic[Backend]):
 
         return random.randint(1, len(self._server) - 1)
 
+    def _get_client(self, write=True, tried=None, client=None):
+        if client:
+            return client
+        return self.get_client(write=write, tried=tried)
+
     def get_client(
         self,
         write: bool = True,
@@ -253,8 +258,7 @@ class BaseClient(Generic[Backend]):
         new version.
         """
 
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         new_key, old_key, value, ttl, version = self._incr_version(
             key, delta, version, client
@@ -319,8 +323,7 @@ class BaseClient(Generic[Backend]):
 
         Returns decoded value if key is found, the default if not.
         """
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
 
         key = self.make_key(key, version=version)
 
@@ -337,8 +340,7 @@ class BaseClient(Generic[Backend]):
     def persist(
         self, key: KeyT, version: int | None = None, client: Backend | Any | None = None
     ) -> bool:
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         key = self.make_key(key, version=version)
 
@@ -354,8 +356,7 @@ class BaseClient(Generic[Backend]):
         if timeout is DEFAULT_TIMEOUT:
             timeout = self._backend.default_timeout  # type: ignore
 
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         key = self.make_key(key, version=version)
 
@@ -374,8 +375,7 @@ class BaseClient(Generic[Backend]):
         Set an expiry flag on a ``key`` to ``when``, which can be represented
         as an integer indicating unix time or a Python datetime object.
         """
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         key = self.make_key(key, version=version)
 
@@ -391,8 +391,7 @@ class BaseClient(Generic[Backend]):
         if timeout is DEFAULT_TIMEOUT:
             timeout = self._backend.default_timeout  # type: ignore
 
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         key = self.make_key(key, version=version)
 
@@ -412,8 +411,7 @@ class BaseClient(Generic[Backend]):
         Set an expiry flag on a ``key`` to ``when``, which can be represented
         as an integer indicating unix time or a Python datetime object.
         """
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         key = self.make_key(key, version=version)
 
@@ -429,8 +427,7 @@ class BaseClient(Generic[Backend]):
         client: Backend | Any | None = None,
         thread_local: bool = True,
     ) -> "Lock":
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         key = self.make_key(key, version=version)
         return client.lock(
@@ -454,8 +451,7 @@ class BaseClient(Generic[Backend]):
         """
         Remove a key from the cache.
         """
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         try:
             return client.delete(self.make_key(key, version=version, prefix=prefix))
@@ -474,8 +470,7 @@ class BaseClient(Generic[Backend]):
         Remove all keys matching pattern.
         """
 
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         pattern = self.make_pattern(pattern, version=version, prefix=prefix)
 
@@ -506,8 +501,7 @@ class BaseClient(Generic[Backend]):
         if not keys:
             return 0
 
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         try:
             return client.delete(*keys)
@@ -519,8 +513,7 @@ class BaseClient(Generic[Backend]):
         Flush all cache keys.
         """
 
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         try:
             return client.flushdb()
@@ -572,8 +565,7 @@ class BaseClient(Generic[Backend]):
         Retrieve many keys.
         """
 
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
 
         if not keys:
             return {}
@@ -607,8 +599,7 @@ class BaseClient(Generic[Backend]):
         If timeout is given, that timeout will be used for the key; otherwise
         the default cache timeout will be used.
         """
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         try:
             pipeline = client.pipeline()
@@ -626,8 +617,7 @@ class BaseClient(Generic[Backend]):
         client: Backend | Any | None = None,
         ignore_key_check: bool = False,
     ) -> int:
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         key = self.make_key(key, version=version)
 
@@ -713,8 +703,7 @@ class BaseClient(Generic[Backend]):
         Executes TTL valkey command and return the "time-to-live" of specified key.
         If key is a non-volatile key, it returns None.
         """
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
 
         key = self.make_key(key, version=version)
         if not client.exists(key):
@@ -737,8 +726,7 @@ class BaseClient(Generic[Backend]):
         Executes PTTL valkey command and return the "time-to-live" of specified key.
         If key is a non-volatile key, it returns None.
         """
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
 
         key = self.make_key(key, version=version)
         if not client.exists(key):
@@ -761,8 +749,7 @@ class BaseClient(Generic[Backend]):
         Test if key exists.
         """
 
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
 
         key = self.make_key(key, version=version)
         try:
@@ -782,8 +769,7 @@ class BaseClient(Generic[Backend]):
         for make memory efficient keys iteration.
         """
 
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
 
         pattern = self.make_pattern(search, version=version)
         for item in client.scan_iter(match=pattern, count=itersize):
@@ -802,8 +788,7 @@ class BaseClient(Generic[Backend]):
         for it.
         """
 
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
 
         pattern = self.make_pattern(search, version=version)
         try:
@@ -849,8 +834,7 @@ class BaseClient(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> int:
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         key = self.make_key(key, version=version)
         encoded_values = [self.encode(value) for value in values]
@@ -862,8 +846,7 @@ class BaseClient(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> int:
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
 
         key = self.make_key(key, version=version)
         return client.scard(key)
@@ -874,8 +857,7 @@ class BaseClient(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> Set[Any]:
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
 
         nkeys = [self.make_key(key, version=version) for key in keys]
         return {self.decode(value) for value in client.sdiff(*nkeys)}
@@ -888,8 +870,7 @@ class BaseClient(Generic[Backend]):
         version_keys: int | None = None,
         client: Backend | Any | None = None,
     ) -> int:
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         dest = self.make_key(dest, version=version_dest)
         nkeys = [self.make_key(key, version=version_keys) for key in keys]
@@ -901,8 +882,7 @@ class BaseClient(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> Set[Any]:
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
 
         nkeys = [self.make_key(key, version=version) for key in keys]
         return {self.decode(value) for value in client.sinter(*nkeys)}
@@ -914,8 +894,7 @@ class BaseClient(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> int:
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         dest = self.make_key(dest, version=version)
         nkeys = [self.make_key(key, version=version) for key in keys]
@@ -928,8 +907,7 @@ class BaseClient(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> List[bool]:
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
 
         key = self.make_key(key, version=version)
         encoded_members = [self.encode(member) for member in members]
@@ -943,8 +921,7 @@ class BaseClient(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> bool:
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
 
         key = self.make_key(key, version=version)
         member = self.encode(member)
@@ -956,8 +933,7 @@ class BaseClient(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> Set[Any]:
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
 
         key = self.make_key(key, version=version)
         return {self.decode(value) for value in client.smembers(key)}
@@ -970,8 +946,7 @@ class BaseClient(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> bool:
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         source = self.make_key(source, version=version)
         destination = self.make_key(destination)
@@ -985,8 +960,7 @@ class BaseClient(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> Set | Any:
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         nkey = self.make_key(key, version=version)
         result = client.spop(nkey, count)
@@ -999,8 +973,7 @@ class BaseClient(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> List | Any:
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
 
         key = self.make_key(key, version=version)
         result = client.srandmember(key, count)
@@ -1013,8 +986,7 @@ class BaseClient(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> int:
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         key = self.make_key(key, version=version)
         nmembers = [self.encode(member) for member in members]
@@ -1032,8 +1004,7 @@ class BaseClient(Generic[Backend]):
             err_msg = "Using match with compression is not supported."
             raise ValueError(err_msg)
 
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
 
         key = self.make_key(key, version=version)
 
@@ -1056,8 +1027,7 @@ class BaseClient(Generic[Backend]):
             err_msg = "Using match with compression is not supported."
             raise ValueError(err_msg)
 
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
 
         key = self.make_key(key, version=version)
         for value in client.sscan_iter(
@@ -1073,8 +1043,7 @@ class BaseClient(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> Set[Any]:
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
 
         nkeys = [self.make_key(key, version=version) for key in keys]
         return {self.decode(value) for value in client.sunion(*nkeys)}
@@ -1086,8 +1055,7 @@ class BaseClient(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> int:
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         destination = self.make_key(destination, version=version)
         encoded_keys = [self.make_key(key, version=version) for key in keys]
@@ -1124,8 +1092,7 @@ class BaseClient(Generic[Backend]):
         if timeout is DEFAULT_TIMEOUT:
             timeout = self._backend.default_timeout
 
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         key = self.make_key(key, version=version)
         if timeout is None:
@@ -1147,8 +1114,7 @@ class BaseClient(Generic[Backend]):
         Set the value of hash name at key to value.
         Returns the number of fields added to the hash.
         """
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
         nkey = self.make_key(key, version=version)
         nvalue = self.encode(value)
         return client.hset(name, nkey, nvalue)
@@ -1164,8 +1130,7 @@ class BaseClient(Generic[Backend]):
         Remove keys from hash name.
         Returns the number of fields deleted from the hash.
         """
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
         nkey = self.make_key(key, version=version)
         return client.hdel(name, nkey)
 
@@ -1177,8 +1142,7 @@ class BaseClient(Generic[Backend]):
         """
         Return the number of items in hash name.
         """
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
         return client.hlen(name)
 
     def hkeys(
@@ -1189,8 +1153,7 @@ class BaseClient(Generic[Backend]):
         """
         Return a list of keys in hash name.
         """
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
         try:
             return [self.reverse_key(k.decode()) for k in client.hkeys(name)]
         except _main_exceptions as e:
@@ -1206,7 +1169,6 @@ class BaseClient(Generic[Backend]):
         """
         Return True if key exists in hash name, else False.
         """
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
         nkey = self.make_key(key, version=version)
         return client.hexists(name, nkey)

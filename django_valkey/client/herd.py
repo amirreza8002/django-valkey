@@ -108,8 +108,7 @@ class HerdClient(DefaultClient):
         return val
 
     def get_many(self, keys, version=None, client=None):
-        if client is None:
-            client = self.get_client(write=False)
+        client = self._get_client(write=False, client=client)
 
         if not keys:
             return {}
@@ -143,8 +142,7 @@ class HerdClient(DefaultClient):
         If timeout is given, that timeout will be used for the key; otherwise
         the default cache timeout will be used.
         """
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         set_function = self.set if herd else super().set
 
@@ -163,8 +161,7 @@ class HerdClient(DefaultClient):
         raise NotImplementedError
 
     def touch(self, key, timeout=DEFAULT_TIMEOUT, version=None, client=None):
-        if client is None:
-            client = self.get_client(write=True)
+        client = self._get_client(write=True, client=client)
 
         value = self.get(key, version=version, client=client)
         if value is None:
