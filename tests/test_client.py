@@ -69,7 +69,7 @@ class TestDefaultClient:
         client._backend.key_prefix = ""
 
         client.delete_pattern(pattern="foo*")
-        get_client_mock.assert_called_once_with(write=True)
+        get_client_mock.assert_called_once_with(write=True, tried=None)
 
     @patch("tests.test_client.DefaultClient.make_pattern")
     @patch("tests.test_client.DefaultClient.get_client", return_value=Mock())
