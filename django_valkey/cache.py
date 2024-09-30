@@ -4,46 +4,11 @@ from typing import Any, Callable
 
 from valkey import Valkey
 
-from django_valkey.base import BaseValkeyCache
+from django_valkey.base import BaseValkeyCache, omit_exception
 from django_valkey.client import DefaultClient
 from django_valkey.exceptions import ConnectionInterrupted
 
 CONNECTION_INTERRUPTED = object()
-
-
-def omit_exception(method: Callable | None = None, return_value: Any | None = None):
-    """
-    Simple decorator that intercepts connection
-    errors and ignores these if settings specify this.
-    """
-
-    if method is None:
-        return functools.partial(omit_exception, return_value=return_value)
-
-    @functools.wraps(method)
-    def _decorator(self, *args, **kwargs):
-        try:
-            return method(self, *args, **kwargs)
-        except ConnectionInterrupted as e:
-            if self._ignore_exceptions:
-                if self._log_ignored_exceptions:
-                    self.logger.exception("Exception ignored")
-
-                return return_value
-            raise e.__cause__  # noqa: B904
-
-    @functools.wraps(method)
-    async def _async_decorator(self, *args, **kwargs):
-        try:
-            return await method(self, *args, **kwargs)
-        except ConnectionInterrupted as e:
-            if self._ignore_exceptions:
-                if self._log_ignored_exceptions:
-                    self.logger.exception("Exception ignored")
-                return return_value
-            raise e.__cause__
-
-    return _async_decorator if iscoroutinefunction(method) else _decorator
 
 
 class ValkeyCache(BaseValkeyCache[DefaultClient, Valkey]):
@@ -75,11 +40,6 @@ class ValkeyCache(BaseValkeyCache[DefaultClient, Valkey]):
     def delete(self, *args, **kwargs):
         result = self.client.delete(*args, **kwargs)
         return bool(result)
-
-    @omit_exception
-    def delete_pattern(self, *args, **kwargs):
-        kwargs.setdefault("itersize", self._default_scan_itersize)
-        return self.client.delete_pattern(*args, **kwargs)
 
     @omit_exception
     def delete_many(self, *args, **kwargs):
@@ -118,129 +78,9 @@ class ValkeyCache(BaseValkeyCache[DefaultClient, Valkey]):
         return self.client.iter_keys(*args, **kwargs)
 
     @omit_exception
-    def ttl(self, *args, **kwargs):
-        return self.client.ttl(*args, **kwargs)
-
-    @omit_exception
-    def pttl(self, *args, **kwargs):
-        return self.client.pttl(*args, **kwargs)
-
-    @omit_exception
-    def persist(self, *args, **kwargs):
-        return self.client.persist(*args, **kwargs)
-
-    @omit_exception
-    def expire(self, *args, **kwargs):
-        return self.client.expire(*args, **kwargs)
-
-    @omit_exception
-    def expire_at(self, *args, **kwargs):
-        return self.client.expire_at(*args, **kwargs)
-
-    @omit_exception
-    def pexpire(self, *args, **kwargs):
-        return self.client.pexpire(*args, **kwargs)
-
-    @omit_exception
-    def pexpire_at(self, *args, **kwargs):
-        return self.client.pexpire_at(*args, **kwargs)
-
-    @omit_exception
-    def lock(self, *args, **kwargs):
-        return self.client.lock(*args, **kwargs)
-
-    @omit_exception
     def close(self):
         self.client.close()
 
     @omit_exception
     def touch(self, *args, **kwargs):
         return self.client.touch(*args, **kwargs)
-
-    @omit_exception
-    def sadd(self, *args, **kwargs):
-        return self.client.sadd(*args, **kwargs)
-
-    @omit_exception
-    def scard(self, *args, **kwargs):
-        return self.client.scard(*args, **kwargs)
-
-    @omit_exception
-    def sdiff(self, *args, **kwargs):
-        return self.client.sdiff(*args, **kwargs)
-
-    @omit_exception
-    def sdiffstore(self, *args, **kwargs):
-        return self.client.sdiffstore(*args, **kwargs)
-
-    @omit_exception
-    def sinter(self, *args, **kwargs):
-        return self.client.sinter(*args, **kwargs)
-
-    @omit_exception
-    def sinterstore(self, *args, **kwargs):
-        return self.client.sinterstore(*args, **kwargs)
-
-    @omit_exception
-    def sismember(self, *args, **kwargs):
-        return self.client.sismember(*args, **kwargs)
-
-    @omit_exception
-    def smembers(self, *args, **kwargs):
-        return self.client.smembers(*args, **kwargs)
-
-    @omit_exception
-    def smove(self, *args, **kwargs):
-        return self.client.smove(*args, **kwargs)
-
-    @omit_exception
-    def spop(self, *args, **kwargs):
-        return self.client.spop(*args, **kwargs)
-
-    @omit_exception
-    def srandmember(self, *args, **kwargs):
-        return self.client.srandmember(*args, **kwargs)
-
-    @omit_exception
-    def srem(self, *args, **kwargs):
-        return self.client.srem(*args, **kwargs)
-
-    @omit_exception
-    def sscan(self, *args, **kwargs):
-        return self.client.sscan(*args, **kwargs)
-
-    @omit_exception
-    def sscan_iter(self, *args, **kwargs):
-        return self.client.sscan_iter(*args, **kwargs)
-
-    @omit_exception
-    def smismember(self, *args, **kwargs):
-        return self.client.smismember(*args, **kwargs)
-
-    @omit_exception
-    def sunion(self, *args, **kwargs):
-        return self.client.sunion(*args, **kwargs)
-
-    @omit_exception
-    def sunionstore(self, *args, **kwargs):
-        return self.client.sunionstore(*args, **kwargs)
-
-    @omit_exception
-    def hset(self, *args, **kwargs):
-        return self.client.hset(*args, **kwargs)
-
-    @omit_exception
-    def hdel(self, *args, **kwargs):
-        return self.client.hdel(*args, **kwargs)
-
-    @omit_exception
-    def hlen(self, *args, **kwargs):
-        return self.client.hlen(*args, **kwargs)
-
-    @omit_exception
-    def hkeys(self, *args, **kwargs):
-        return self.client.hkeys(*args, **kwargs)
-
-    @omit_exception
-    def hexists(self, *args, **kwargs):
-        return self.client.hexists(*args, **kwargs)
