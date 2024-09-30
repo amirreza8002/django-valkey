@@ -1,12 +1,7 @@
-import functools
-from inspect import iscoroutinefunction
-from typing import Any, Callable
-
 from valkey import Valkey
 
 from django_valkey.base import BaseValkeyCache, omit_exception
 from django_valkey.client import DefaultClient
-from django_valkey.exceptions import ConnectionInterrupted
 
 CONNECTION_INTERRUPTED = object()
 

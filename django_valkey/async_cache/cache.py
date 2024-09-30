@@ -1,5 +1,3 @@
-import contextlib
-
 from valkey.asyncio.client import Valkey as AValkey
 
 from django_valkey.base import BaseValkeyCache
