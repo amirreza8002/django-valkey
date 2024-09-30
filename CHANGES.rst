@@ -1,4 +1,14 @@
+Version 0.1.5
+-------------
+
+- Added mset and mget (atomic)
+
+- get_many() is now non-atomic
+
+- extended base.BaseValkeyCache to have more logic
+
 Version 0.1.4
+-------------
 
 - Added BaseClient class
 
