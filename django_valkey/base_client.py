@@ -555,13 +555,14 @@ class BaseClient(Generic[Backend]):
             return [self.decode(value) for value in result]
         return self.decode(result)
 
-    def get_many(
+    def mget(
         self,
         keys: Iterable[KeyT],
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> dict:
         """
+        atomic method.
         Retrieve many keys.
         """
 
@@ -575,7 +576,7 @@ class BaseClient(Generic[Backend]):
         map_keys = {self.make_key(k, version=version): k for k in keys}
 
         try:
-            results = client.mget(*map_keys)
+            results = client.mget(map_keys)
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 
@@ -585,6 +586,27 @@ class BaseClient(Generic[Backend]):
             recovered_data[map_keys[key]] = self.decode(value)
         return recovered_data
 
+    def get_many(
+        self,
+        keys: Iterable[KeyT],
+        version: int | None = None,
+        client: Backend | None = None,
+    ):
+        """
+        non-atomic bulk method.
+        get values of the provided keys
+        """
+        client = self._get_client(write=False, client=client)
+
+        try:
+            pipeline = client.pipeline()
+            for key in keys:
+                self.get(key=key, version=version, client=pipeline)
+            pipeline.execute()
+
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
     def set_many(
         self,
         data: Dict[KeyT, EncodableT],
@@ -592,7 +614,7 @@ class BaseClient(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> None:
-        """
+        """a non-atomic bulk method
         Set a bunch of values in the cache at once from a dict of key/value
         pairs. This is much more efficient than calling set() multiple times.
 
@@ -606,6 +628,25 @@ class BaseClient(Generic[Backend]):
             for key, value in data.items():
                 self.set(key, value, timeout, version=version, client=pipeline)
             pipeline.execute()
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
+    def mset(
+        self,
+        data: Dict[KeyT, Any],
+        timeout: float | None = None,
+        version: int | None = None,
+        client: Backend | None = None,
+    ) -> None:
+        """
+        an atomic bulk method
+        """
+        client = self._get_client(write=True, client=client)
+        data = {
+            self.make_key(k, version=version): self.encode(v) for k, v in data.items()
+        }
+        try:
+            client.mset(data)
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 
