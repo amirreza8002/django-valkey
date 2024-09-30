@@ -199,16 +199,37 @@ class TestAsyncDjangoValkeyCache:
         res = await cache.aget_many(["a", "b", "c"])
         assert res == {"a": 1, "b": 2, "c": 3}
 
+    async def test_mget(self, cache: AsyncValkeyCache):
+        await cache.aset("a", 1)
+        await cache.aset("b", 2)
+        await cache.aset("c", 3)
+
+        res = await cache.mget(["a", "b", "c"])
+        assert res == {"a": 1, "b": 2, "c": 3}
+
     async def test_get_many_unicode(self, cache: AsyncValkeyCache):
         await cache.aset("a", "1")
-        await cache.aset("b", "2")
-        await cache.aset("c", "3")
+        await cache.aset("ب", "2")
+        await cache.aset("c", "الف")
 
-        res = await cache.aget_many(["a", "b", "c"])
-        assert res == {"a": "1", "b": "2", "c": "3"}
+        res = await cache.aget_many(["a", "ب", "c"])
+        assert res == {"a": "1", "ب": "2", "c": "الف"}
+
+    async def test_mget_unicode(self, cache: AsyncValkeyCache):
+        await cache.aset("a", "1")
+        await cache.aset("ب", "2")
+        await cache.aset("c", "الف")
+
+        res = await cache.mget(["a", "ب", "c"])
+        assert res == {"a": "1", "ب": "2", "c": "الف"}
 
     async def test_set_many(self, cache: AsyncValkeyCache):
         await cache.aset_many({"a": 1, "b": 2, "c": 3})
+        res = await cache.aget_many(["a", "b", "c"])
+        assert res == {"a": 1, "b": 2, "c": 3}
+
+    async def test_mset(self, cache: AsyncValkeyCache):
+        await cache.amset({"a": 1, "b": 2, "c": 3})
         res = await cache.aget_many(["a", "b", "c"])
         assert res == {"a": 1, "b": 2, "c": 3}
 
@@ -823,7 +844,7 @@ class TestAsyncDjangoValkeyCache:
     async def test_hset(self, cache: AsyncValkeyCache):
         # if isinstance(cache.client, ShardClient):
         #     pytest.skip("ShardClient doesn't support get_client")
-        await cache.ahset("foo_hash1", "foo1", "bar1")
+        assert await cache.ahset("foo_hash1", "foo1", "bar1") == 1
         await cache.ahset("foo_hash1", "foo2", "bar2")
         assert await cache.ahlen("foo_hash1") == 2
         assert await cache.ahexists("foo_hash1", "foo1")

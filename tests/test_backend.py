@@ -196,17 +196,34 @@ class TestDjangoValkeyCache:
         res = cache.get_many(["a", "b", "c"])
         assert res == {"a": 1, "b": 2, "c": 3}
 
+    def test_mget(self, cache: ValkeyCache):
+        if isinstance(cache.client, ShardClient):
+            pytest.skip()
+        cache.set("a", 1)
+        cache.set("b", 2)
+        cache.set("c", 3)
+
+        res = cache.mget(["a", "b", "c"])
+        assert res == {"a": 1, "b": 2, "c": 3}
+
     def test_get_many_unicode(self, cache: ValkeyCache):
         cache.set("a", "1")
-        cache.set("b", "2")
-        cache.set("c", "3")
+        cache.set("ب", "2")
+        cache.set("c", "الف")
 
-        res = cache.get_many(["a", "b", "c"])
-        assert res == {"a": "1", "b": "2", "c": "3"}
+        res = cache.get_many(["a", "ب", "c"])
+        assert res == {"a": "1", "ب": "2", "c": "الف"}
 
     def test_set_many(self, cache: ValkeyCache):
         cache.set_many({"a": 1, "b": 2, "c": 3})
         res = cache.get_many(["a", "b", "c"])
+        assert res == {"a": 1, "b": 2, "c": 3}
+
+    def test_mset(self, cache: ValkeyCache):
+        if isinstance(cache.client, ShardClient):
+            pytest.skip()
+        cache.mset({"a": 1, "b": 2, "c": 3})
+        res = cache.mget(["a", "b", "c"])
         assert res == {"a": 1, "b": 2, "c": 3}
 
     def test_set_call_empty_pipeline(
