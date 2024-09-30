@@ -98,6 +98,9 @@ class ShardClient(DefaultClient):
             recovered_data[map_keys[key]] = value
         return recovered_data
 
+    def mget(self, *args, **kwargs):
+        raise NotImplementedError
+
     def set(
         self,
         key: KeyT,
@@ -141,6 +144,9 @@ class ShardClient(DefaultClient):
         """
         for key, value in data.items():
             self.set(key, value, timeout, version=version, client=client)
+
+    def mset(self, *args, **kwargs):
+        raise NotImplementedError
 
     def has_key(
         self, key: KeyT, version: int | None = None, client: Valkey | Any | None = None

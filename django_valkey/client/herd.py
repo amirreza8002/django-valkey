@@ -1,15 +1,14 @@
 import random
 import socket
 import time
-from collections import OrderedDict
-from typing import Tuple, Any
+from typing import Tuple, Any, Iterable
 
 from django.conf import settings
 from valkey import Valkey
 from valkey.exceptions import ConnectionError, ResponseError, TimeoutError
 from valkey.typing import KeyT, EncodableT
 
-from django_valkey.base_client import DEFAULT_TIMEOUT
+from django_valkey.base_client import DEFAULT_TIMEOUT, Backend
 from django_valkey.client.default import DefaultClient
 from django_valkey.exceptions import ConnectionInterrupted
 
@@ -113,13 +112,16 @@ class HerdClient(DefaultClient):
         if not keys:
             return {}
 
-        recovered_data = OrderedDict()
+        recovered_data = {}
 
         new_keys = [self.make_key(key, version=version) for key in keys]
         map_keys = dict(zip(new_keys, keys))
 
         try:
-            results = client.mget(*new_keys)
+            pipeline = client.pipeline()
+            for key in new_keys:
+                pipeline.get(key)
+            results = pipeline.execute()
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 
@@ -130,6 +132,32 @@ class HerdClient(DefaultClient):
             val, refresh = self._unpack(self.decode(value))
             recovered_data[map_keys[key]] = None if refresh else val
 
+        return recovered_data
+
+    def mget(
+        self,
+        keys: Iterable[KeyT],
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> dict:
+        client = self._get_client(write=False, client=client)
+        if not keys:
+            return {}
+
+        recovered_data = {}
+
+        new_keys = [self.make_key(key, version=version) for key in keys]
+
+        try:
+            results = client.mget(new_keys)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
+        for key, value in zip(keys, results):
+            if value is None:
+                continue
+            val, refresh = self._unpack(self.decode(value))
+            recovered_data[key] = None if refresh else val
         return recovered_data
 
     def set_many(
