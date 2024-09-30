@@ -10,6 +10,72 @@ from django_valkey.async_cache.client.default import AsyncDefaultClient
 class AsyncValkeyCache(BaseValkeyCache[AsyncDefaultClient, AValkey]):
     DEFAULT_CLIENT_CLASS = "django_valkey.async_cache.client.default.AsyncDefaultClient"
 
+    mset = BaseValkeyCache.amset
+
+    keys = BaseValkeyCache.akeys
+
+    iter_keys = BaseValkeyCache.aiter_keys
+
+    ttl = BaseValkeyCache.attl
+
+    pttl = BaseValkeyCache.apttl
+
+    persist = BaseValkeyCache.apersist
+
+    expire = BaseValkeyCache.aexpire
+
+    expire_at = BaseValkeyCache.aexpire_at
+
+    pexpire = BaseValkeyCache.apexpire
+
+    pexpire_at = BaseValkeyCache.apexpire_at
+
+    lock = alock = get_lock = BaseValkeyCache.aget_lock
+
+    sadd = BaseValkeyCache.asadd
+
+    scard = BaseValkeyCache.ascard
+
+    sdiff = BaseValkeyCache.asdiff
+
+    sdiffstore = BaseValkeyCache.asdiffstore
+
+    sinter = BaseValkeyCache.asinter
+
+    sinterstore = BaseValkeyCache.asinterstore
+
+    sismember = BaseValkeyCache.asismember
+
+    smembers = BaseValkeyCache.asmembers
+
+    smove = BaseValkeyCache.asmove
+
+    spop = BaseValkeyCache.aspop
+
+    srandmember = BaseValkeyCache.asrandmember
+
+    srem = BaseValkeyCache.asrem
+
+    sscan = BaseValkeyCache.asscan
+
+    sscan_iter = BaseValkeyCache.asscan_iter
+
+    smismember = BaseValkeyCache.asmismember
+
+    sunion = BaseValkeyCache.asunion
+
+    sunionstore = BaseValkeyCache.asunionstore
+
+    hset = BaseValkeyCache.ahset
+
+    hdel = BaseValkeyCache.ahdel
+
+    hlen = BaseValkeyCache.ahlen
+
+    hkeys = BaseValkeyCache.ahkeys
+
+    hexists = BaseValkeyCache.ahexists
+
     @omit_exception
     async def set(self, *args, **kwargs):
         return await self.client.aset(*args, **kwargs)
@@ -45,13 +111,6 @@ class AsyncValkeyCache(BaseValkeyCache[AsyncDefaultClient, AValkey]):
         return bool(result)
 
     adelete = delete
-
-    @omit_exception
-    async def delete_pattern(self, *args, **kwargs):
-        kwargs.setdefault("itersize", self._default_scan_itersize)
-        return await self.client.adelete_pattern(*args, **kwargs)
-
-    adelete_pattern = delete_pattern
 
     @omit_exception
     async def delete_many(self, *args, **kwargs):
@@ -96,68 +155,6 @@ class AsyncValkeyCache(BaseValkeyCache[AsyncDefaultClient, AValkey]):
     ahas_key = has_key
 
     @omit_exception
-    async def keys(self, *args, **kwargs):
-        return await self.client.akeys(*args, **kwargs)
-
-    akeys = keys
-
-    @omit_exception
-    async def iter_keys(self, *args, **kwargs):
-        async with contextlib.aclosing(self.client.aiter_keys(*args, **kwargs)) as it:
-            async for key in it:
-                yield key
-
-    aiter_keys = iter_keys
-
-    @omit_exception
-    async def ttl(self, *args, **kwargs):
-        return await self.client.attl(*args, **kwargs)
-
-    attl = ttl
-
-    @omit_exception
-    async def pttl(self, *args, **kwargs):
-        return await self.client.apttl(*args, **kwargs)
-
-    apttl = pttl
-
-    @omit_exception
-    async def persist(self, *args, **kwargs):
-        return await self.client.persist(*args, **kwargs)
-
-    apersist = persist
-
-    @omit_exception
-    async def expire(self, *args, **kwargs):
-        return await self.client.expire(*args, **kwargs)
-
-    aexpire = expire
-
-    @omit_exception
-    async def expire_at(self, *args, **kwargs):
-        return await self.client.expire_at(*args, **kwargs)
-
-    aexpire_at = expire_at
-
-    @omit_exception
-    async def pexpire(self, *args, **kwargs):
-        return await self.client.pexpire(*args, **kwargs)
-
-    apexpire = pexpire
-
-    @omit_exception
-    async def pexpire_at(self, *args, **kwargs):
-        return await self.client.pexpire_at(*args, **kwargs)
-
-    apexpire_at = pexpire_at
-
-    @omit_exception
-    async def get_lock(self, *args, **kwargs):
-        return await self.client.aget_lock(*args, **kwargs)
-
-    lock = alock = aget_lock = get_lock
-
-    @omit_exception
     async def aclose(self, *args, **kwargs):
         return await self.client.aclose()
 
@@ -166,137 +163,3 @@ class AsyncValkeyCache(BaseValkeyCache[AsyncDefaultClient, AValkey]):
         return await self.client.touch(*args, **kwargs)
 
     atouch = touch
-
-    @omit_exception
-    async def sadd(self, *args, **kwargs):
-        return await self.client.sadd(*args, **kwargs)
-
-    asadd = sadd
-
-    @omit_exception
-    async def scard(self, *args, **kwargs):
-        return await self.client.scard(*args, **kwargs)
-
-    ascard = scard
-
-    @omit_exception
-    async def sdiff(self, *args, **kwargs):
-        return await self.client.sdiff(*args, **kwargs)
-
-    asdiff = sdiff
-
-    @omit_exception
-    async def sdiffstore(self, *args, **kwargs):
-        return await self.client.sdiffstore(*args, **kwargs)
-
-    asdiffstore = sdiffstore
-
-    @omit_exception
-    async def sinter(self, *args, **kwargs):
-        return await self.client.sinter(*args, **kwargs)
-
-    asinter = sinter
-
-    @omit_exception
-    async def sinterstore(self, *args, **kwargs):
-        return await self.client.sinterstore(*args, **kwargs)
-
-    asinterstore = sinterstore
-
-    @omit_exception
-    async def sismember(self, *args, **kwargs):
-        return await self.client.sismember(*args, **kwargs)
-
-    asismember = sismember
-
-    @omit_exception
-    async def smembers(self, *args, **kwargs):
-        return await self.client.smembers(*args, **kwargs)
-
-    asmembers = smembers
-
-    @omit_exception
-    async def smove(self, *args, **kwargs):
-        return await self.client.smove(*args, **kwargs)
-
-    asmove = smove
-
-    @omit_exception
-    async def spop(self, *args, **kwargs):
-        return await self.client.spop(*args, **kwargs)
-
-    aspop = spop
-
-    @omit_exception
-    async def srandmember(self, *args, **kwargs):
-        return await self.client.srandmember(*args, **kwargs)
-
-    asrandmember = srandmember
-
-    @omit_exception
-    async def srem(self, *args, **kwargs):
-        return await self.client.srem(*args, **kwargs)
-
-    asrem = srem
-
-    @omit_exception
-    async def sscan(self, *args, **kwargs):
-        return await self.client.sscan(*args, **kwargs)
-
-    asscan = sscan
-
-    @omit_exception
-    async def sscan_iter(self, *args, **kwargs):
-        async with contextlib.aclosing(self.client.sscan_iter(*args, **kwargs)) as it:
-            async for key in it:
-                yield key
-
-    asscan_iter = sscan_iter
-
-    @omit_exception
-    async def smismember(self, *args, **kwargs):
-        return await self.client.smismember(*args, **kwargs)
-
-    asmismember = smismember
-
-    @omit_exception
-    async def sunion(self, *args, **kwargs):
-        return await self.client.sunion(*args, **kwargs)
-
-    asunion = sunion
-
-    @omit_exception
-    async def sunionstore(self, *args, **kwargs):
-        return await self.client.sunionstore(*args, **kwargs)
-
-    asunionstore = sunionstore
-
-    @omit_exception
-    async def hset(self, *args, **kwargs):
-        return await self.client.hset(*args, **kwargs)
-
-    ahset = hset
-
-    @omit_exception
-    async def hdel(self, *args, **kwargs):
-        return await self.client.hdel(*args, **kwargs)
-
-    ahdel = hdel
-
-    @omit_exception
-    async def hlen(self, *args, **kwargs):
-        return await self.client.hlen(*args, **kwargs)
-
-    ahlen = hlen
-
-    @omit_exception
-    async def hkeys(self, *args, **kwargs):
-        return await self.client.hkeys(*args, **kwargs)
-
-    ahkeys = hkeys
-
-    @omit_exception
-    async def hexists(self, *args, **kwargs):
-        return await self.client.hexists(*args, **kwargs)
-
-    ahexists = hexists
