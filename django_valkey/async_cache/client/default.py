@@ -1,13 +1,13 @@
 import contextlib
 from contextlib import suppress
-from typing import Any, Set, cast, TYPE_CHECKING, AsyncGenerator
+from typing import Any, Set, cast, TYPE_CHECKING, AsyncGenerator, Dict, Iterable
 
 from django.conf import settings
 from django.core.cache.backends.base import DEFAULT_TIMEOUT
 
 from valkey.asyncio import Valkey as AValkey
 from valkey.exceptions import ResponseError
-from valkey.typing import PatternT
+from valkey.typing import PatternT, KeyT
 
 from django_valkey.base_client import (
     BaseClient,
@@ -427,7 +427,7 @@ class AsyncDefaultClient(BaseClient[AValkey]):
 
     aencode = encode
 
-    async def get_many(
+    async def mget(
         self, keys, version: int | None = None, client: AValkey | Any | None = None
     ) -> dict:
         if not keys:
@@ -451,6 +451,28 @@ class AsyncDefaultClient(BaseClient[AValkey]):
 
         return recovered_data
 
+    amget = mget
+
+    async def get_many(
+        self,
+        keys: Iterable[KeyT],
+        version: int | None = None,
+        client: AValkey | None = None,
+    ):
+        """
+        non-atomic bulk method.
+        get values of the provided keys.
+        """
+        client = await self._get_client(write=False, client=client)
+
+        try:
+            pipline = await client.pipeline()
+            for key in keys:
+                await self.aget(key=key, version=version, client=pipline)
+            await pipline.execute()
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
     aget_many = get_many
 
     async def set_many(
@@ -472,10 +494,31 @@ class AsyncDefaultClient(BaseClient[AValkey]):
 
     aset_many = set_many
 
+    async def mset(
+        self,
+        data: Dict[KeyT, Any],
+        timeout: float | None = None,
+        version: int | None = None,
+        client: AValkey | None = None,
+    ) -> None:
+        client = await self._get_client(write=True, client=client)
+
+        data = {
+            await self.make_key(k, version=version): await self.encode(v)
+            for k, v in data.items()
+        }
+
+        try:
+            await client.mset(data)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
+    amset = mset
+
     async def _incr(
         self,
         key,
-        delta: 1,
+        delta: int = 1,
         version: int | None = None,
         client: AValkey | Any | None = None,
         ignoree_key_check: bool = False,
