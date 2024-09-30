@@ -34,6 +34,14 @@ you can easily fix this by running this commands:
 where settings.py is the file you have your configs in, change the file name if you are using a different name.
 
 
+Different commands
+##################
+
+in django-redis, ``get_many()`` is an atomic operation, but ``set_many()`` is non-atomic.
+
+in django-valkey ``mget()`` and ``mset()`` are atomic, and ``get_many()`` and ``set_many()`` are non-atomic.
+
+
 More options
 ############
 

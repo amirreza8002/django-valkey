@@ -30,6 +30,31 @@ behaves in the same way as django backend contract specifies:
     cache.set("key", "value", timeout=None)
 
 
+Get and Set in bulk
+*******************
+
+django-valkey has two different kind of method for bulk get/set: atomic and non-atomic.
+
+atomic operations are done with ``mget()`` and ``mset()``
+
+.. code-block:: pycon
+
+    >>> from django.core.cache import cache
+    >>> cache.mset({"a": 1, "b": 2})
+    >>> cache.mget(["a", "b"])
+    {"a": 1, "b": 2}
+
+the non atomic operations are done with ``get_many()`` and ``set_many()``doen
+
+.. code-block:: pycon
+
+    >>> from django.core.cache import cache
+    >>> cache.set_many({"a": 1, "b": 2})
+    >>> cache.get_many(["a", "b"])
+    {"a": 1, "b": 2}
+
+**Note**: django-redis users should note that in django redis ``get_many()`` is an atomic operation, but ``set_many()``  is non-atomic.
+
 Scan and Delete in bulk
 ***********************
 
