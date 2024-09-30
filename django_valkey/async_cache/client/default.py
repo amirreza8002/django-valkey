@@ -468,10 +468,18 @@ class AsyncDefaultClient(BaseClient[AValkey]):
         try:
             pipline = await client.pipeline()
             for key in keys:
-                await self.aget(key=key, version=version, client=pipline)
-            await pipline.execute()
+                key = await self.make_key(key, version=version)
+                await pipline.get(key)
+            values = await pipline.execute()
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
+
+        recovered_data = {}
+        for key, value in zip(keys, values):
+            if not value:
+                continue
+            recovered_data[key] = await self.decode(value)
+        return recovered_data
 
     aget_many = get_many
 

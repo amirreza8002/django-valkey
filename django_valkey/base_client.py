@@ -591,7 +591,7 @@ class BaseClient(Generic[Backend]):
         keys: Iterable[KeyT],
         version: int | None = None,
         client: Backend | None = None,
-    ):
+    ) -> dict:
         """
         non-atomic bulk method.
         get values of the provided keys
@@ -601,11 +601,19 @@ class BaseClient(Generic[Backend]):
         try:
             pipeline = client.pipeline()
             for key in keys:
-                self.get(key=key, version=version, client=pipeline)
-            pipeline.execute()
+                key = self.make_key(key, version=version)
+                pipeline.get(key)
+            values = pipeline.execute()
 
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
+
+        recovered_data = {}
+        for key, value in zip(keys, values):
+            if not value:
+                continue
+            recovered_data[key] = self.decode(value)
+        return recovered_data
 
     def set_many(
         self,
