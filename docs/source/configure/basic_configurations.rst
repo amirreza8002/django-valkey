@@ -38,7 +38,7 @@ the login for the user ``django`` would look like this:
 
 you can also provide the password in the ``OPTIONS`` dictionary
 this is specially useful if you have a password that is not URL safe
-but *notice* that if a password is provided by the URL, it won't be overriden by the password in ``OPTIONS``.
+but *notice* that if a password is provided by the URL, it won't be overridden by the password in ``OPTIONS``.
 
 .. code-block:: python
 

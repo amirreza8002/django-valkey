@@ -44,7 +44,7 @@ atomic operations are done with ``mget()`` and ``mset()``
     >>> cache.mget(["a", "b"])
     {"a": 1, "b": 2}
 
-the non atomic operations are done with ``get_many()`` and ``set_many()``doen
+the non atomic operations are done with ``get_many()`` and ``set_many()``:
 
 .. code-block:: pycon
 
@@ -132,7 +132,7 @@ you can also access the ttl of any sorted key in milliseconds, use the ``pttl`` 
 Expire & Persist
 ****************
 
-in addition to the ``ttl`` and ``pttl`` methods, you can use the ``persist`` method so the key would have infinite timout:
+in addition to the ``ttl`` and ``pttl`` methods, you can use the ``persist`` method so the key would have infinite timeout:
 
 .. code-block:: pycon
 
