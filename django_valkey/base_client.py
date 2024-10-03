@@ -740,7 +740,7 @@ class BaseClient(Generic[Backend]):
         client: Backend | Any | None = None,
     ) -> int:
         """
-        Decreace delta to value in the cache. If the key does not exist, raise a
+        Decrease delta to value in the cache. If the key does not exist, raise a
         ValueError exception.
         """
         return self._incr(key=key, delta=-delta, version=version, client=client)
