@@ -2,24 +2,32 @@ SECRET_KEY = "django_tests_secret_key"
 
 CACHES = {
     "default": {
-        "BACKEND": "django_valkey.cache.ValkeyCache",
-        "LOCATION": ["valkey://127.0.0.1:6379", "valkey://127.0.0.1:6379"],
-        "OPTIONS": {"CLIENT_CLASS": "django_valkey.client.DefaultClient"},
+        "BACKEND": "django_valkey.cluster_cache.cache.ClusterValkeyCache",
+        "LOCATION": ["valkey://127.0.0.1:7005", "valkey://127.0.0.1:7005"],
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_valkey.cluster_cache.client.DefaultClusterClient"
+        },
     },
     "doesnotexist": {
-        "BACKEND": "django_valkey.cache.ValkeyCache",
-        "LOCATION": "valkey://127.0.0.1:56379?db=1",
-        "OPTIONS": {"CLIENT_CLASS": "django_valkey.client.DefaultClient"},
+        "BACKEND": "django_valkey.cluster_cache.cache.ClusterValkeyCache",
+        "LOCATION": "valkey://127.0.0.1:56379?db=0",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_valkey.cluster_cache.client.DefaultClusterClient"
+        },
     },
     "sample": {
-        "BACKEND": "django_valkey.cache.ValkeyCache",
-        "LOCATION": "valkey://127.0.0.1:6379:1,valkey://127.0.0.1:6379:1",
-        "OPTIONS": {"CLIENT_CLASS": "django_valkey.client.DefaultClient"},
+        "BACKEND": "django_valkey.cluster_cache.cache.ClusterValkeyCache",
+        "LOCATION": "valkey://127.0.0.1:7005:0,valkey://127.0.0.1:7002:0",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_valkey.cluster_cache.client.DefaultClusterClient"
+        },
     },
     "with_prefix": {
-        "BACKEND": "django_valkey.cache.ValkeyCache",
-        "LOCATION": "valkey://127.0.0.1:6379?db=1",
-        "OPTIONS": {"CLIENT_CLASS": "django_valkey.client.DefaultClient"},
+        "BACKEND": "django_valkey.cluster_cache.cache.ClusterValkeyCache",
+        "LOCATION": "valkey://127.0.0.1:7005?db=0",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_valkey.cluster_cache.client.DefaultClusterClient"
+        },
         "KEY_PREFIX": "test-prefix",
     },
 }
