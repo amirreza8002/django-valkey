@@ -466,11 +466,11 @@ class AsyncDefaultClient(BaseClient[AValkey]):
         client = await self._get_client(write=False, client=client)
 
         try:
-            pipline = await client.pipeline()
+            pipeline = await client.pipeline()
             for key in keys:
                 key = await self.make_key(key, version=version)
-                await pipline.get(key)
-            values = await pipline.execute()
+                await pipeline.get(key)
+            values = await pipeline.execute()
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 
@@ -606,7 +606,7 @@ class AsyncDefaultClient(BaseClient[AValkey]):
         client: AValkey | Any | None = None,
     ) -> int:
         """
-        Decreace delta to value in the cache. If the key does not exist, raise a
+        Decrease delta to value in the cache. If the key does not exist, raise a
         ValueError exception.
         """
         return await self._incr(key, delta=-delta, version=version, client=client)
