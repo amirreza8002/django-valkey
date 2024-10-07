@@ -283,8 +283,10 @@ class ShardClient(DefaultClient):
         version=None,
         timeout=None,
         sleep=0.1,
+        blocking: bool = True,
         blocking_timeout=None,
         client=None,
+        lock_class=None,
         thread_local=True,
     ):
         if client is None:
@@ -295,8 +297,10 @@ class ShardClient(DefaultClient):
             key,
             timeout=timeout,
             sleep=sleep,
+            blocking=blocking,
             client=client,
             blocking_timeout=blocking_timeout,
+            lock_class=lock_class,
             thread_local=thread_local,
         )
 
