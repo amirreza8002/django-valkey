@@ -294,8 +294,10 @@ class AsyncDefaultClient(BaseClient[AValkey]):
         version: int | None = None,
         timeout: float | int | None = None,
         sleep: float = 0.1,
+        blocking: bool = True,
         blocking_timeout: float | None = None,
         client: AValkey | Any | None = None,
+        lock_class=None,
         thread_local: bool = True,
     ) -> "Lock":
         """Returns a Lock object, the object then should be used in an async context manager"""
@@ -308,7 +310,9 @@ class AsyncDefaultClient(BaseClient[AValkey]):
             key,
             timeout=timeout,
             sleep=sleep,
+            blocking=blocking,
             blocking_timeout=blocking_timeout,
+            lock_class=lock_class,
             thread_local=thread_local,
         )
 

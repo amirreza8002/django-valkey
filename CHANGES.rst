@@ -1,3 +1,8 @@
+Version 0.1.6
+-------------
+
+- added ``blocking`` and ``lock_class`` to get_lock parameters.
+
 Version 0.1.5
 -------------
 

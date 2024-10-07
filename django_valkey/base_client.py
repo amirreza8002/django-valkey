@@ -423,8 +423,10 @@ class BaseClient(Generic[Backend]):
         version: int | None = None,
         timeout: float | None = None,
         sleep: float = 0.1,
+        blocking: bool = True,
         blocking_timeout: float | None = None,
         client: Backend | Any | None = None,
+        lock_class=None,
         thread_local: bool = True,
     ) -> "Lock":
         client = self._get_client(write=True, client=client)
@@ -434,7 +436,9 @@ class BaseClient(Generic[Backend]):
             key,
             timeout=timeout,
             sleep=sleep,
+            blocking=blocking,
             blocking_timeout=blocking_timeout,
+            lock_class=lock_class,
             thread_local=thread_local,
         )
 
