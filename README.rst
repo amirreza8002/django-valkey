@@ -89,11 +89,10 @@ also make an issue before going through troubles of coding, someone might alread
 
 Todo
 ~~~~
-1. check type hints to e accurate
-2. refactor spaghetti codes
-3. review the documentations
-4. work on cluster client
-5. plan for an async client
+1. fix ignore_exception issue in cluster client (cluster branch).
+2. fix the CI.
+3. review the documentations.
+4. refactor cluster branch.
 
 License
 -------
