@@ -50,4 +50,4 @@ sudo docker run \
   --network host \
   --user $(id -u):$(id -g) \
   --volume /tmp:/tmp \
-  --detach valkey/valkey valkey-server "${ARGS[@]}"
+  --detach valkey/valkey valkey-server "${ARGS[@]}" --save ""
