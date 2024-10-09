@@ -59,7 +59,7 @@ an example code would look like this:
 
 
 BaseConnectionFactory
-##################
+#####################
 
 the ``BaseConnectionFactory`` inherits from ``typing.Generic`` to give more robust type hinting, and allow our four connection pools to have cleaner codebase.
 
