@@ -1,3 +1,8 @@
+Version 0.1.7
+-------------
+
+- added ``AsyncHerdClient``
+
 Version 0.1.6
 -------------
 
