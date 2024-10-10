@@ -11,6 +11,8 @@ def replace_query(url, query):
 
 
 class SentinelClient(DefaultClient):
+    CONNECTION_FACTORY_PATH = "django_valkey.pool.SentinelConnectionFactory"
+
     """
     Sentinel client which uses the single valkey URL specified by the CACHE's
     LOCATION to create a LOCATION configuration for two connection pools; One
