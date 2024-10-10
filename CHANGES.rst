@@ -1,3 +1,10 @@
+Version 0.1.8
+-------------
+
+- Added ``AsyncSentinelClient``
+
+- internal bug fix
+
 Version 0.1.7
 -------------
 
