@@ -16,7 +16,7 @@ class AsyncConnectionFactory(BaseConnectionFactory[AValkey, ConnectionPool]):
     path_pool_cls = "valkey.asyncio.connection.ConnectionPool"
     path_base_cls = "valkey.asyncio.client.Valkey"
 
-    async def disconnect(self, connection: type[AValkey] | type) -> None:
+    async def disconnect(self, connection: type[AValkey]) -> None:
         await connection.connection_pool.disconnect()
 
     def get_parser_cls(self) -> type[DefaultParser] | type:
@@ -57,11 +57,11 @@ class AsyncSentinelConnectionFactory(AsyncConnectionFactory):
             **connection_kwargs,
         )
 
-    async def get_connection_pool(self, params: dict) -> ConnectionPool | Any:
+    def get_connection_pool(self, params: dict) -> ConnectionPool | Any:
         url = urlparse(params["url"])
         cp_params = params
         cp_params.update(service_name=url.hostname, sentinel_manager=self._sentinel)
-        pool = await super().get_connection_pool(cp_params)
+        pool = super().get_connection_pool(cp_params)
 
         is_master = parse_qs(url.query).get("is_master")
         if is_master:
