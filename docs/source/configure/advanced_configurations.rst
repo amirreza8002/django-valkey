@@ -112,10 +112,8 @@ but for a simple configuration this will work:
 
 .. code-block:: python
 
-    DJANGO_VALKEY_CONNECTION_FACTORY = "django_valkey.pool.SentinelConnectionFactory"
-
     SENTINELS = [
-        ('sentinel-1', 26379),
+        ("127.0.0.1", 26379),  # a list of (host name, port) tuples.
         ]
 
     CACHES = {
@@ -131,6 +129,9 @@ but for a simple configuration this will work:
                 }
             }
         }
+
+*note*: the sentinel client uses the sentinel connection factory by default.
+you can change this behaviour by setting ``DJANGO_VALKEY_CONNECTION_FACTORY`` in your django settings or ``CONNECTION_FACTORY`` in your ``CACHES`` OPTIONS.
 
 Use Shard client
 ^^^^^^^^^^^^^^^^

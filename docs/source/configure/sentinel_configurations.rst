@@ -4,7 +4,7 @@ Sentinel configuration
 
 a sentinel configuration has these parts:
 
-1. ``DJANGO_VALKEY_CONNECTION_FACTORY``: you can use the default ConnectionFactory or SentinelConnectionFactory
+1. ``DJANGO_VALKEY_CONNECTION_FACTORY``: you can use the ConnectionFactory or SentinelConnectionFactory. the sentinel client uses SentinelConnectionFactory by default.
    SentinelConnectionFactory inherits from ConnectionFactory but adds checks to see if configuration is correct, also adds features to make configuration more robust.
 
 2. ``CACHES["default"]["OPTIONS"]["CONNECTION_FACTORY"]``: does what the above option does, but only in the scope of the cache server it was defined in.
@@ -25,6 +25,7 @@ the below code is a bit long but comprehensive example of different ways to conf
 
     DJANGO_VALKEY_CONNECTION_FACTORY = "django_valkey.pool.SentinelConnectionFactory"
 
+    # SENTINELS is a list of (host name, port) tuples
     # These sentinels are shared between all the examples, and are passed
     # directly to valkey Sentinel. These can also be defined inline.
     SENTINELS = [
