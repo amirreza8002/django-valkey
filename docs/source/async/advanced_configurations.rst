@@ -12,8 +12,10 @@ if you need those middlewares, consider using a sync client or implement a new m
 Clients
 #######
 
-as of now, we have two async client, ``AsyncDefaultClient``, available in ``django_valkey.async_cache.client.default``, and ``AsyncHerdClient`` available in ``django_valkey.async_cache.client.herd``.
+We have three async client, ``AsyncDefaultClient``, available in ``django_valkey.async_cache.client.default``, ``AsyncHerdClient`` available in ``django_valkey.async_cache.client.herd`` and ``AsyncSentinelClient`` at ``django_valkey.async_cache.client.sentinel``.
 the default client can also be used with sentinels, as we'll discuss later.
+
+note that all clients are imported and available at ``django_valkey.async_cache.client``
 
 Default client
 ^^^^^^^^^^^^^^
@@ -35,6 +37,38 @@ the ``AsyncDefaultClient`` is configured by default by ``AsyncValkeyCache``, so 
         }
 
 or you can replace the client with your own like that.
+
+Sentinel Client
+^^^^^^^^^^^^^^^
+
+to support sentinels, django_valkey comes with a client and a connection factory, technically you don't need the connection factory, but it provides you with some nice features.
+a dedicated page on sentinel client has been written in :doc:`../configure/sentinel_configurations`, tho that is for the sync version, the principle is the same.
+
+the connection factory is at ``django_valkey.async_cache.pool.AsyncSentinelConnectionFactory``.
+
+to configure the async sentinel client you can write your settings like this:
+
+.. code-block:: python
+
+    SENTINELS = [
+        ("127.0.0.1", 26379),  # a list of (host name, port) tuples.
+        ]
+
+    CACHES = {
+        "default": {
+            "BACKEND": "django_valkey.async_cache.cache.AsyncValkeyCache",
+            "LOCATION": "valkey://service_name/db",
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_valkey.client.SentinelClient",
+                "SENTINELS": SENTINELS,
+
+                # optional
+                "SENTINEL_KWARGS": {}
+                }
+            }
+        }
+
+*note*: the sentinel client uses the sentinel connection factory by default, you can change it by setting ``DJANGO_VALKEY_CONNECTION_FACTORY`` in your django settings or ``CONNECTION_FACTORY`` in your ``CACHES`` OPTIONS.
 
 Herd client
 ^^^^^^^^^^^
