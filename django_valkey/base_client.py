@@ -87,8 +87,8 @@ class BaseClient(Generic[Backend]):
             options=self._options
         )
 
-        self._connection_factory = self._options.get(
-            "DJANGO_VALKEY_CONNECTION_FACTORY", self.CONNECTION_FACTORY_PATH
+        self._connection_factory = getattr(
+            settings, "DJANGO_VALKEY_CONNECTION_FACTORY", self.CONNECTION_FACTORY_PATH
         )
         self.connection_factory = pool.get_connection_factory(
             options=self._options, path=self._connection_factory
