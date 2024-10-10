@@ -710,6 +710,7 @@ class TestAsyncDjangoValkeyCache:
         await lock.release()
         assert not await cache.ahas_key("foobar")
 
+    @pytest.mark.filterwarnings("ignore")
     async def test_lock_released_by_thread(self, cache: AsyncValkeyCache):
         lock = await cache.lock("foobar", thread_local=False)
         await lock.acquire(blocking=True)
