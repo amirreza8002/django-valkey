@@ -35,12 +35,12 @@ Documentation = "https://django-valkey.readthedocs.io/en/latest/"
 [tool.poetry.dependencies]
 python = ">= 3.10"
 django = ">= 3.2.9"
-valkey = "^6.0.0"
+valkey = "^6.0.2"
 
 libvalkey = { optional = true, version = "^4.0.0" }
 lz4 = { optional = true, version = "^4.3.3" }
 pyzstd = { optional = true, version = "^0.16.1" }
-msgpack = { optional = true, version = "^1.0.8" }
+msgpack = { optional = true, version = "^1.1.0" }
 brotli = { optional = true, version = "^1.1.0"}
 
 
@@ -53,19 +53,19 @@ brotli = ["brotli"]
 
 
 [tool.poetry.group.dev.dependencies]
-black = "^24.8.0"
-ruff = "^0.6.3"
+black = "^24.10.0"
+ruff = "^0.6.9"
 mypy = "^1.11.2"
-django-stubs = "^5.0.4"
+django-stubs = "^5.1.0"
 lxml = "^5.3.0"
-pytest = "^8.3.2"
-pytest-django = "^4.8.0"
+pytest = "^8.3.3"
+pytest-django = "^4.9.0"
 pytest-mock = "^3.14.0"
 tox = "^4.18.0"
 coverage = "^7.6.1"
 django-coverage-plugin = "^3.1.0"
 pytest-asyncio = "^0.24.0"
-pre-commit = "^3.8.0"
+pre-commit = "^4.0.1"
 
 
 [tool.poetry.group.docs.dependencies]
