@@ -7,7 +7,7 @@ SENTINELS = [("127.0.0.1", 26379)]
 CACHES = {
     "default": {
         "BACKEND": "django_valkey.cache.ValkeyCache",
-        "LOCATION": ["valkey://default_service?db=1"],
+        "LOCATION": ["valkey://mymaster?db=1"],
         "OPTIONS": {
             "CLIENT_CLASS": "django_valkey.client.DefaultClient",
             "SENTINELS": SENTINELS,
@@ -23,7 +23,7 @@ CACHES = {
     },
     "sample": {
         "BACKEND": "django_valkey.cache.ValkeyCache",
-        "LOCATION": "valkey://default_service?db=1",
+        "LOCATION": "valkey://mymaster?db=1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_valkey.client.SentinelClient",
             "SENTINELS": SENTINELS,
@@ -31,7 +31,7 @@ CACHES = {
     },
     "with_prefix": {
         "BACKEND": "django_valkey.cache.ValkeyCache",
-        "LOCATION": "valkey://default_service?db=1",
+        "LOCATION": "valkey://mymaster?db=1",
         "KEY_PREFIX": "test-prefix",
         "OPTIONS": {
             "CLIENT_CLASS": "django_valkey.client.DefaultClient",

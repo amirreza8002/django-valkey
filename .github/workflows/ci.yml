@@ -13,30 +13,42 @@ jobs:
           - '3.10'
           - '3.11'
           - '3.12'
+          - '3.13'
         django-version:
           - '4.2'
           - '5.0'
           - '5.1'
         valkey-version:
           - 'latest'
+          - '7.2'
 
-        # Only test pre-release dependencies for the latest Python.
-        include:
-          # latest Django with pre-release valkey
-          - django-version: '5.0'
-            valkey-version: 'master'
-            python-version: '3.11'
+    services:
+      valkey:
+        image: valkey/valkey:${{ matrix.valkey-version }}
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --volume /tmp:/tmp
+        env:
+          VALKEY_EXTRA_FLAGS: '--save "" --unixsocket /tmp/valkey.sock --unixsocketperm 777'
 
-          # latest valkey with pre-release Django
-          - django-version: 'main'
-            valkey-version: 'latest'
-            python-version: '3.12'
-
-          # pre-release Django and valkey
-          - django-version: 'main'
-            valkey-version: 'master'
-            python-version: '3.11'
-
+      sentinel:
+        image: bitnami/valkey-sentinel:${{ matrix.valkey-version }}
+        ports:
+          - 26379:26379
+        options: >-
+          --health-cmd "valkey-cli -p 26379 ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --volume /tmp:/tmp
+        env:
+          VALKEY_SENTINEL_QUORUM: "1"
+          VALKEY_SENTINEL_AOF_ENABLED: "no"
     steps:
       - uses: actions/checkout@v4
 
@@ -65,7 +77,9 @@ jobs:
           poetry config virtualenvs.in-project true --local
 
       - name: Install project
-        run: poetry install --no-interaction --all-extras
+        run: |
+          poetry add django==${{ matrix.django-version }}
+          poetry install --no-interaction --all-extras
 
       - name: tests
         run: |

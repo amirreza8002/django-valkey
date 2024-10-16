@@ -7,7 +7,7 @@ conn_factory = "django_valkey.async_cache.pool.AsyncSentinelConnectionFactory"
 CACHES = {
     "default": {
         "BACKEND": "django_valkey.async_cache.cache.AsyncValkeyCache",
-        "LOCATION": ["valkey://default_service?db=5"],
+        "LOCATION": ["valkey://mymaster?db=5"],
         "OPTIONS": {
             "CLIENT_CLASS": "django_valkey.async_cache.client.AsyncDefaultClient",
             "SENTINELS": SENTINELS,
@@ -25,7 +25,7 @@ CACHES = {
     },
     "sample": {
         "BACKEND": "django_valkey.async_cache.cache.AsyncValkeyCache",
-        "LOCATION": "valkey://default_service?db=1",
+        "LOCATION": "valkey://mymaster?db=1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_valkey.async_cache.client.AsyncSentinelClient",
             "SENTINELS": SENTINELS,
@@ -34,7 +34,7 @@ CACHES = {
     },
     "with_prefix": {
         "BACKEND": "django_valkey.async_cache.cache.AsyncValkeyCache",
-        "LOCATION": "valkey://default_service?db=1",
+        "LOCATION": "valkey://mymaster?db=1",
         "KEY_PREFIX": "test-prefix",
         "OPTIONS": {
             "CLIENT_CLASS": "django_valkey.async_cache.client.AsyncDefaultClient",
