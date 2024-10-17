@@ -83,14 +83,6 @@ jobs:
 
       - name: tests
         run: |
-          VALKEY_PRIMARY=$(tests/start_valkey.sh)
-          VALKEY_SENTINEL=$(tests/start_valkey.sh --sentinel)
-          CONTAINERS="$VALKEY_PRIMARY $VALKEY_SENTINEL"
-          trap "docker stop $CONTAINERS && docker rm $CONTAINERS" EXIT
-          tests/wait_for_valkey.sh $VALKEY_PRIMARY 6379
-          tests/wait_for_valkey.sh $VALKEY_SENTINEL 26379
-
-          
           poetry run pytest tests/*.py --ds=tests.settings.sqlite
           poetry run pytest tests/*.py --ds=tests.settings.sqlite_herd
           poetry run pytest tests/*.py --ds=tests.settings.sqlite_json
@@ -110,3 +102,36 @@ jobs:
         env:
           DJANGO: ${{ matrix.django-version }}
           VALKEY: ${{ matrix.valkey-version }}
+
+#  cluster:
+#    runs-on: ubuntu-latest
+#
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        python-version:
+#          - '3.10'
+#          - '3.11'
+#          - '3.12'
+#          #          - '3.13'
+#        django-version:
+#          - '4.2'
+#          - '5.0'
+#          - '5.1'
+#        valkey-version:
+#          - 'latest'
+#          - '7.2'
+#    services:
+#      valkey:
+#        image: bitnami/valkey-cluster:${{ matrix.valkey-version }}
+#        ports:
+#          - 6379:6379
+#        options: >-
+#          --health-cmd "valkey-cli ping"
+#          --health-interval 10s
+#          --health-timeout 5s
+#          --health-retries 5
+#          --volume /tmp:/tmp
+#        env:
+#          VALKEY_EXTRA_FLAGS: '--save ""'
+#          VALKEY_AOF_ENABLE: "no"
