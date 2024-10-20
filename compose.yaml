@@ -1,0 +1,21 @@
+---
+
+services:
+  cluster:
+    container_name: valkey-cluster
+    build:
+      context: .
+      dockerfile: dockers/Dockerfile.cluster
+
+    ports:
+      - "16379:16379"
+      - "16380:16380"
+      - "16381:16381"
+      - "16382:16382"
+      - "16383:16383"
+      - "16384:16384"
+    volumes:
+      - "./dockers/cluster.valkey.conf:/valkey.conf:ro"
+    profiles:
+      - cluster
+      - all
