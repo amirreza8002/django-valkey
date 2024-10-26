@@ -92,10 +92,10 @@ also make an issue before going through troubles of coding, someone might alread
 
 Todo
 ~~~~
-1. fix ignore_exception issue in cluster client (cluster branch).
-2. fix the CI.
-3. review the documentations.
-4. refactor cluster branch.
+
+1. Fix the CI in cluster branch.
+2. Add cluster to documentations.
+3. Refactor cluster branch.
 
 License
 -------
