@@ -2,6 +2,22 @@
 Valkey cache backend for Django
 ===============================
 
+.. image:: https://img.shields.io/pypi/v/django-valkey?label=PyPi
+   :target: https://pypi.org/project/django-valkey/
+   :alt: Pypi
+
+.. image:: https://img.shields.io/pypi/pyversions/django-valkey.svg
+   :target: https://img/pypi.org/project/django-valkey/
+   :alt: Python versions
+
+.. image:: https://readthedocs.org/projects/django-valkey/badge/?version=latest&style=flat
+   :target: https://django-valkey.readthedocs.io/en/latest/
+   :alt: docs
+
+.. image:: https://static.pepy.tech/badge/django-valkey/month
+   :target: https://pepy.tech/project/django-valkey
+   :alt: downloads/month
+
 .. image:: https://img.shields.io/badge/Published%20on-Django%20Packages-0c3c26
    :target: https://djangopackages.org/packages/p/django-valkey/
    :alt: Published on Django Packages
