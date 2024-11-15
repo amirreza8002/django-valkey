@@ -3,9 +3,30 @@ name: CI
 on: [push, pull_request]
 
 jobs:
+  populate-cache:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    name: Update docker cache
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache docker images
+        id: custom-cache
+        uses: actions/cache@v4
+        with:
+          path: ./custom-cache/
+          key: custom-cache
+      - if: ${{ steps.custom-cache.outputs.cache-hit != 'true' || github.event_name == 'schedule' }}
+        name: Update cache
+        run: |
+          mkdir -p ./custom-cache/
+          docker compose --profile all build
+          docker pull valkey/valkey:latest
+          docker save django-valkey-cluster:latest valkey/valkey:latest -o ./custom-cache/all.tar
+
   test:
     runs-on: ubuntu-latest
-
+    needs: [populate-cache]
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -13,42 +34,13 @@ jobs:
           - '3.10'
           - '3.11'
           - '3.12'
-          #          - '3.13'
+#          - '3.13'
         django-version:
           - '4.2'
           - '5.0'
           - '5.1'
-        valkey-version:
-          - 'latest'
-          - '7.2'
-
-    services:
-      valkey:
-        image: valkey/valkey:${{ matrix.valkey-version }}
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "valkey-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-          --volume /tmp:/tmp
-        env:
-          VALKEY_EXTRA_FLAGS: '--save "" --unixsocket /tmp/valkey.sock --unixsocketperm 777'
-
-      sentinel:
-        image: bitnami/valkey-sentinel:${{ matrix.valkey-version }}
-        ports:
-          - 26379:26379
-        options: >-
-          --health-cmd "valkey-cli -p 26379 ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-          --volume /tmp:/tmp
-        env:
-          VALKEY_SENTINEL_QUORUM: "1"
-          VALKEY_SENTINEL_AOF_ENABLED: "no"
+    env:
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     steps:
       - uses: actions/checkout@v4
 
@@ -56,6 +48,15 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Cache docker images
+        id: custom-cache
+        uses: actions/cache@v4
+        with:
+          path: ./custom-cache/
+          fail-on-cache-miss: true
+          key: custom-cache
+      - name: Use Cache
+        run: docker image load -i ./custom-cache/all.tar
 
 #      - name: Cache
 #        id: cached-poetry
@@ -83,30 +84,25 @@ jobs:
 
       - name: tests
         run: |
-          VALKEY_PRIMARY=$(tests/start_valkey.sh)
-          VALKEY_SENTINEL=$(tests/start_valkey.sh --sentinel)
-          CONTAINERS="$VALKEY_PRIMARY $VALKEY_SENTINEL"
-          trap "docker stop $CONTAINERS && docker rm $CONTAINERS" EXIT
-          tests/wait_for_valkey.sh $VALKEY_PRIMARY 6379
-          tests/wait_for_valkey.sh $VALKEY_SENTINEL 26379
-
+          poetry run invoke devenv
+          chmod +x ./util/wait-for-it.sh
+          ./util/wait-for-it.sh localhost:6379
           
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_herd
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_json
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_lz4
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_msgpack
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_sentinel
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_sentinel_opts
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_sharding
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_usock
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_zlib
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_zstd
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_gzip
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_bz2
-          poetry run pytest tests/tests_async/*.py --ds=tests.settings.sqlite_async
-          poetry run pytest tests/tests_async/*.py --ds=tests.settings.sqlite_async_herd
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite -x
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_herd -x
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_json -x
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_lz4 -x
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_msgpack -x
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_sentinel -x
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_sentinel_opts -x
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_sharding -x
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_zlib -x
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_zstd -x
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_gzip -x
+          poetry run pytest tests/*.py --ds=tests.settings.sqlite_bz2 -x
+          poetry run pytest tests/tests_async/*.py --ds=tests.settings.sqlite_async -x
+          poetry run pytest tests/tests_async/*.py --ds=tests.settings.sqlite_async_herd -x
+#          poetry run pytest tests/*.py --ds=tests.settings.sqlite_usock -x
 
         env:
           DJANGO: ${{ matrix.django-version }}
-          VALKEY: ${{ matrix.valkey-version }}
