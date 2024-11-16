@@ -1021,6 +1021,8 @@ class AsyncDefaultClient(BaseClient[AValkey]):
             await self.disconnect(index=index)
         self._clients = [None] * num_clients
 
+    _close = _aclose
+
     async def touch(
         self,
         key,
