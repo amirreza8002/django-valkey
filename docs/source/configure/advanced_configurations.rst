@@ -177,6 +177,8 @@ to use this client change your configs to look like this:
 Configure the serializer
 ########################
 
+**IMPORTANT NOTE:** if you are using the cache server with django's cache middleware or ``cache_page`` decorator, don't change the serializer.
+
 by default django-valkey uses python's pickle library to serialize data.
 you can stick to pickle, use one of the alternative serializes we provide, or write your own and plug it in.
 
