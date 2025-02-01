@@ -25,8 +25,7 @@ Valkey cache backend for Django
 Introduction
 ------------
 
-django-valkey is a BSD licensed, full featured Valkey cache and session backend
-for Django.
+django-valkey is a BSD licensed, full featured Valkey backend for Django.
 
 this project is a fork of the wonderful `django-redis <https://github.com/jazzband/django-redis>`_ project.
 they wrote all the good codes.
@@ -34,26 +33,26 @@ they wrote all the good codes.
 Why use django-valkey?
 ~~~~~~~~~~~~~~~~~~~~~~
 
-- Valkey is a free licenced and well maintained key/value database
-- Uses native valkey-py url notation connection strings
-- Pluggable clients
-- Pluggable parsers
-- Pluggable serializers
-- Primary/secondary support in the default client
-- Comprehensive test suite
-- Used in production in several projects as cache and session storage
-- Supports infinite timeouts
-- Facilities for raw access to Valkey client/connection pool
-- Highly configurable (can emulate memcached exception behavior, for example)
-- Unix sockets supported by default
+- Valkey is a free licenced and well maintained key/value database.
+- Uses native valkey-py url notation connection strings.
+- Pluggable clients.
+- Pluggable parsers.
+- Pluggable serializers.
+- Primary/secondary support in the default client.
+- Comprehensive test suite.
+- Used in production in several projects as cache and session storage.
+- Supports infinite timeouts.
+- Facilities for raw access to Valkey client/connection pool.
+- Highly configurable (can emulate memcached exception behavior, for example).
+- Unix sockets supported by default.
 
 Requirements
 ~~~~~~~~~~~~
 
-- `Python`_ 3.10+  (if you use with libvalkey, they don't support 3.13 yet)
+- `Python`_ 3.10+  
 - `Django`_ 3.2.9+
-- `valkey-py`_ 6.0.0+ (probably works on older versions too)
-- `Valkey server`_ 7.2.6+ (probably works with older versions too)
+- `valkey-py`_ 6.0.0+ 
+- `Valkey server`_ 7.2.6+ 
 
 .. _Python: https://www.python.org/downloads/
 .. _Django: https://www.djangoproject.com/download/
@@ -65,7 +64,7 @@ User guide
 
 Documentation
 ~~~~~~~~~~~~~
-check out our `Docs <https://django-valkey.readthedocs.io/en/latest/>`_ for a complete explanation
+check out our `Docs <https://django-valkey.readthedocs.io/en/latest/>`_ for a complete explanation.
 
 Installation
 ~~~~~~~~~~~~
