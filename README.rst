@@ -51,8 +51,8 @@ Requirements
 ~~~~~~~~~~~~
 
 - `Python`_ 3.10+  (if you use with libvalkey, they don't support 3.13 yet)
-- `Django`_ 3.2.9+
-- `valkey-py`_ 6.0.0+ (probably works on older versions too)
+- `Django`_ 4.2.20+
+- `valkey-py`_ 6.0.2+ (probably works on older versions too)
 - `Valkey server`_ 7.2.6+ (probably works with older versions too)
 
 .. _Python: https://www.python.org/downloads/

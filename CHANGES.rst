@@ -1,3 +1,12 @@
+Version 0.2.0
+
+- drop support for EOL django versions
+
+- floats are no longer serialized
+    this is to support atomic float operations
+
+- minor bug fix
+
 Version 0.1.8
 -------------
 
