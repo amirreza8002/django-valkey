@@ -26,7 +26,7 @@ class DefaultClusterClient(BaseClient[ValkeyCluster]):
         target_nodes=ValkeyCluster.DEFAULT_NODE,
         version=None,
         client=None,
-        **kwargs
+        **kwargs,
     ):
         client = self._get_client(client=client)
         pattern = self.make_pattern(pattern, version=version)

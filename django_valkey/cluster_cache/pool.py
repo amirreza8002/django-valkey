@@ -28,5 +28,5 @@ class ClusterConnectionFactory(BaseConnectionFactory[ValkeyCluster, ConnectionPo
         return self.base_client_cls(
             url=params["url"],
             parser_class=params["parser_class"],
-            **self.base_client_cls_kwargs
+            **self.base_client_cls_kwargs,
         )
