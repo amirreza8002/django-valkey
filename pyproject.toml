@@ -1,6 +1,6 @@
 [project]
 name = "django-valkey"
-version = "0.2.0"
+version = "0.2.0.post1"
 description = "a valkey backend for django"
 authors = [
     {name = "amirreza",email = "amir.rsf1380@gmail.com"}
@@ -41,9 +41,9 @@ msgpack = ["msgpack (>=1.1.0,<2.0.0)"]
 brotli = ["brotli (>=1.1.0,<2.0.0)"]
 
 [tool.poetry.urls]
-Homepage = "https://github.com/amirreza8002/django-valkey"
-Source = "https://github.com/amirreza8002/django-valkey"
-Issues = "https://github.com/amirreza8002/django-valkey/issues"
+Homepage = "https://github.com/django-utils/django-valkey"
+Source = "https://github.com/django-utils/django-valkey"
+Issues = "https://github.com/django-utils/django-valkey/issues"
 Documentation = "https://django-valkey.readthedocs.io/en/latest/"
 
 [tool.poetry.group.dev.dependencies]
