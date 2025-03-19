@@ -1,6 +1,6 @@
 [project]
 name = "django-valkey"
-version = "0.2.0.post1"
+version = "0.2.1"
 description = "a valkey backend for django"
 authors = [
     {name = "amirreza",email = "amir.rsf1380@gmail.com"}
@@ -30,7 +30,6 @@ requires-python = ">=3.10"
 dependencies = [
     "django (>=4.2.20)",
     "valkey (>=6.0.2)",
-    "sphinx (>=8.0.2)",
 ]
 
 [project.optional-dependencies]
@@ -64,6 +63,7 @@ ruff = "^0.11.0"
 
 [tool.poetry.group.docs.dependencies]
 sphinx-pdj-theme = "^0.5.0"
+sphinx = ">=8.0.2"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
