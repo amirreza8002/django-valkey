@@ -65,6 +65,10 @@ mkdocs = "^1.6.1"
 mkdocs-material = "^9.6.9"
 mkdocs-awesome-nav = "^3.0.0"
 
+
+[tool.poetry.group.ipython.dependencies]
+ipython = ">=8.30.0"
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
