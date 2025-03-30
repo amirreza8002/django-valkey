@@ -404,34 +404,34 @@ class AsyncBackendCommands:
         return await self.client.ahas_key(*args, **kwargs)
 
     async def close(self, *args, **kwargs):
-        return await self.client.aclose()
+        return await self.client.close()
 
     async def touch(self, *args, **kwargs):
         return await self.client.touch(*args, **kwargs)
 
     async def mset(self, *args, **kwargs):
-        return await self.client.amset(*args, **kwargs)
+        return await self.client.mset(*args, **kwargs)
 
     async def mget(self, *args, **kwargs):
-        return await self.client.amget(*args, **kwargs)
+        return await self.client.mget(*args, **kwargs)
 
     async def persist(self, *args, **kwargs) -> bool:
-        return await self.client.apersist(*args, **kwargs)
+        return await self.client.persist(*args, **kwargs)
 
     async def expire(self, *args, **kwargs) -> bool:
-        return await self.client.aexpire(*args, **kwargs)
+        return await self.client.expire(*args, **kwargs)
 
     async def expire_at(self, *args, **kwargs) -> bool:
-        return await self.client.aexpire_at(*args, **kwargs)
+        return await self.client.expire_at(*args, **kwargs)
 
     async def pexpire(self, *args, **kwargs) -> bool:
-        return await self.client.apexpire(*args, **kwargs)
+        return await self.client.pexpire(*args, **kwargs)
 
     async def pexpire_at(self, *args, **kwargs) -> bool:
-        return await self.client.apexpire_at(*args, **kwargs)
+        return await self.client.pexpire_at(*args, **kwargs)
 
     async def get_lock(self, *args, **kwargs) -> "ALock":
-        return await self.client.aget_lock(*args, **kwargs)
+        return await self.client.get_lock(*args, **kwargs)
 
     lock = get_lock
 
@@ -440,71 +440,71 @@ class AsyncBackendCommands:
         return await self.client.adelete_pattern(*args, **kwargs)
 
     async def ttl(self, *args, **kwargs) -> int:
-        return await self.client.attl(*args, **kwargs)
+        return await self.client.ttl(*args, **kwargs)
 
     async def pttl(self, *args, **kwargs) -> int:
-        return await self.client.apttl(*args, **kwargs)
+        return await self.client.pttl(*args, **kwargs)
 
     async def iter_keys(self, *args, **kwargs) -> AsyncGenerator[Any]:
-        async with contextlib.aclosing(self.client.aiter_keys(*args, **kwargs)) as it:
+        async with contextlib.aclosing(self.client.iter_keys(*args, **kwargs)) as it:
             async for key in it:
                 yield key
 
     async def keys(self, *args, **kwargs) -> list[Any]:
-        return await self.client.akeys(*args, **kwargs)
+        return await self.client.keys(*args, **kwargs)
 
     async def sadd(self, *args, **kwargs) -> int:
-        return await self.client.asadd(*args, **kwargs)
+        return await self.client.sadd(*args, **kwargs)
 
     async def scard(self, *args, **kwargs) -> int:
-        return await self.client.ascard(*args, **kwargs)
+        return await self.client.scard(*args, **kwargs)
 
     async def sdiff(self, *args, **kwargs) -> builtins.set[Any]:
-        return await self.client.asdiff(*args, **kwargs)
+        return await self.client.sdiff(*args, **kwargs)
 
     async def sdiffstore(self, *args, **kwargs) -> int:
-        return await self.client.asdiffstore(*args, **kwargs)
+        return await self.client.sdiffstore(*args, **kwargs)
 
     async def sinter(self, *args, **kwargs) -> builtins.set[Any]:
-        return await self.client.asinter(*args, **kwargs)
+        return await self.client.sinter(*args, **kwargs)
 
     async def sinterstore(self, *args, **kwargs) -> int:
-        return await self.client.asinterstore(*args, **kwargs)
+        return await self.client.sinterstore(*args, **kwargs)
 
     async def smismember(self, *args, **kwargs) -> list[bool]:
-        return await self.client.asmismember(*args, **kwargs)
+        return await self.client.smismember(*args, **kwargs)
 
     async def sismember(self, *args, **kwargs) -> bool:
-        return await self.client.asismember(*args, **kwargs)
+        return await self.client.sismember(*args, **kwargs)
 
     async def smembers(self, *args, **kwargs) -> builtins.set[Any]:
-        return await self.client.asmembers(*args, **kwargs)
+        return await self.client.smembers(*args, **kwargs)
 
     async def smove(self, *args, **kwargs) -> bool:
-        return await self.client.asmove(*args, **kwargs)
+        return await self.client.smove(*args, **kwargs)
 
     async def spop(self, *args, **kwargs) -> builtins.set | Any:
-        return await self.client.aspop(*args, **kwargs)
+        return await self.client.spop(*args, **kwargs)
 
     async def srandmember(self, *args, **kwargs) -> list | Any:
-        return await self.client.asrandmember(*args, **kwargs)
+        return await self.client.srandmember(*args, **kwargs)
 
     async def srem(self, *args, **kwargs) -> int:
-        return await self.client.asrem(*args, **kwargs)
+        return await self.client.srem(*args, **kwargs)
 
     async def sscan(self, *args, **kwargs) -> builtins.set[Any]:
-        return await self.client.asscan(*args, **kwargs)
+        return await self.client.sscan(*args, **kwargs)
 
     async def sscan_iter(self, *args, **kwargs) -> AsyncGenerator[Any]:
-        async with contextlib.aclosing(self.client.asscan_iter(*args, **kwargs)) as it:
+        async with contextlib.aclosing(self.client.sscan_iter(*args, **kwargs)) as it:
             async for key in it:
                 yield key
 
     async def sunion(self, *args, **kwargs) -> builtins.set[Any]:
-        return await self.client.asunion(*args, **kwargs)
+        return await self.client.sunion(*args, **kwargs)
 
     async def sunionstore(self, *args, **kwargs) -> int:
-        return await self.client.asunionstore(*args, **kwargs)
+        return await self.client.sunionstore(*args, **kwargs)
 
     async def hset(self, *args, **kwargs) -> int:
         return await self.client.hset(*args, **kwargs)
@@ -516,7 +516,7 @@ class AsyncBackendCommands:
         return await self.client.hlen(*args, **kwargs)
 
     async def hkeys(self, *args, **kwargs) -> list[Any]:
-        return await self.client.ahkeys(*args, **kwargs)
+        return await self.client.hkeys(*args, **kwargs)
 
     async def hexists(self, *args, **kwargs) -> bool:
-        return await self.client.ahexists(*args, **kwargs)
+        return await self.client.hexists(*args, **kwargs)
