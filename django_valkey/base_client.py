@@ -1,3 +1,4 @@
+import contextlib
 import random
 import re
 import socket
@@ -14,16 +15,19 @@ from typing import (
     TYPE_CHECKING,
     Generic,
     TypeVar,
+    AsyncGenerator,
 )
 
 from django.conf import settings
 from django.core.cache.backends.base import DEFAULT_TIMEOUT, get_key_func
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.module_loading import import_string
+
 from valkey.exceptions import ConnectionError, ResponseError, TimeoutError
 from valkey.typing import AbsExpiryT, EncodableT, ExpiryT, KeyT, PatternT
 
 from django_valkey import pool
+from django_valkey.base import ATTR_DOES_NOT_EXIST
 from django_valkey.compressors.identity import IdentityCompressor
 from django_valkey.exceptions import CompressorError, ConnectionInterrupted
 from django_valkey.serializers.pickle import PickleSerializer
@@ -31,6 +35,7 @@ from django_valkey.util import CacheKey
 
 if TYPE_CHECKING:
     from valkey.lock import Lock
+    from valkey.asyncio.lock import Lock as AsyncLock
     from django_valkey.cache import ValkeyCache
 
 
@@ -93,9 +98,6 @@ class BaseClient(Generic[Backend]):
         self.connection_factory = pool.get_connection_factory(
             options=self._options, path=self._connection_factory
         )
-
-    def __contains__(self, key: KeyT) -> bool:
-        return self.has_key(key)
 
     def _has_compression_enabled(self) -> bool:
         return (
@@ -196,13 +198,18 @@ class BaseClient(Generic[Backend]):
 
         return CacheKey(self._backend.key_func(pattern, prefix, version_str))
 
+
+class ClientCommands(Generic[Backend]):
+    def __contains__(self, key: KeyT) -> bool:
+        return self.has_key(key)
+
     def _get_client(self, write=True, tried=None, client=None):
         if client:
             return client
         return self.get_client(write=write, tried=tried)
 
     def get_client(
-        self,
+        self: BaseClient,
         write: bool = True,
         tried: List[int] | None = None,
     ) -> Backend | Any:
@@ -221,7 +228,7 @@ class BaseClient(Generic[Backend]):
         return self._clients[index]  # type:ignore
 
     def get_client_with_index(
-        self,
+        self: BaseClient,
         write: bool = True,
         tried: List[int] | None = None,
     ) -> Tuple[Backend | Any, int]:
@@ -239,7 +246,7 @@ class BaseClient(Generic[Backend]):
 
         return self._clients[index], index  # type:ignore
 
-    def connect(self, index: int = 0) -> Backend | Any:
+    def connect(self: BaseClient, index: int = 0) -> Backend | Any:
         """
         Given a connection index, returns a new raw valkey client/connection
         instance. Index is used for replication setups and indicates that
@@ -247,7 +254,9 @@ class BaseClient(Generic[Backend]):
         """
         return self.connection_factory.connect(self._server[index])
 
-    def disconnect(self, index: int = 0, client: Backend | Any | None = None) -> None:
+    def disconnect(
+        self: BaseClient, index: int = 0, client: Backend | Any | None = None
+    ) -> None:
         """
         delegates the connection factory to disconnect the client
         """
@@ -258,7 +267,7 @@ class BaseClient(Generic[Backend]):
             self.connection_factory.disconnect(client)
 
     def set(
-        self,
+        self: BaseClient,
         key: KeyT,
         value: EncodableT,
         timeout: int | float | None = DEFAULT_TIMEOUT,
@@ -316,7 +325,7 @@ class BaseClient(Generic[Backend]):
                 raise ConnectionInterrupted(connection=client) from e
 
     def incr_version(
-        self,
+        self: BaseClient,
         key: KeyT,
         delta: int = 1,
         version: int | None = None,
@@ -337,7 +346,7 @@ class BaseClient(Generic[Backend]):
         return version + delta
 
     def _incr_version(
-        self,
+        self: BaseClient,
         key: KeyT,
         delta: int = 1,
         version: int | None = None,
@@ -366,7 +375,7 @@ class BaseClient(Generic[Backend]):
         return new_key, old_key, value, ttl, version
 
     def add(
-        self,
+        self: BaseClient,
         key: KeyT,
         value: EncodableT,
         timeout: float | None = DEFAULT_TIMEOUT,
@@ -381,7 +390,7 @@ class BaseClient(Generic[Backend]):
         return self.set(key, value, timeout, version=version, client=client, nx=True)
 
     def get(
-        self,
+        self: BaseClient,
         key: KeyT,
         default: Any | None = None,
         version: int | None = None,
@@ -407,7 +416,10 @@ class BaseClient(Generic[Backend]):
         return self.decode(value)
 
     def persist(
-        self, key: KeyT, version: int | None = None, client: Backend | Any | None = None
+        self: BaseClient,
+        key: KeyT,
+        version: int | None = None,
+        client: Backend | Any | None = None,
     ) -> bool:
         client = self._get_client(write=True, client=client)
 
@@ -416,7 +428,7 @@ class BaseClient(Generic[Backend]):
         return client.persist(key)
 
     def expire(
-        self,
+        self: BaseClient,
         key: KeyT,
         timeout: ExpiryT,
         version: int | None = None,
@@ -434,7 +446,7 @@ class BaseClient(Generic[Backend]):
         return client.expire(key, timeout)  # type: ignore
 
     def expire_at(
-        self,
+        self: BaseClient,
         key: KeyT,
         when: AbsExpiryT,
         version: int | None = None,
@@ -451,7 +463,7 @@ class BaseClient(Generic[Backend]):
         return client.expireat(key, when)
 
     def pexpire(
-        self,
+        self: BaseClient,
         key: KeyT,
         timeout: ExpiryT,
         version: int | None = None,
@@ -470,7 +482,7 @@ class BaseClient(Generic[Backend]):
         return client.pexpire(key, timeout)
 
     def pexpire_at(
-        self,
+        self: BaseClient,
         key: KeyT,
         when: AbsExpiryT,
         version: int | None = None,
@@ -487,7 +499,7 @@ class BaseClient(Generic[Backend]):
         return client.pexpireat(key, when)
 
     def get_lock(
-        self,
+        self: BaseClient,
         key: KeyT,
         version: int | None = None,
         timeout: float | None = None,
@@ -515,7 +527,7 @@ class BaseClient(Generic[Backend]):
     lock = get_lock
 
     def delete(
-        self,
+        self: BaseClient,
         key: KeyT,
         version: int | None = None,
         prefix: str | None = None,
@@ -532,7 +544,7 @@ class BaseClient(Generic[Backend]):
             raise ConnectionInterrupted(connection=client) from e
 
     def delete_pattern(
-        self,
+        self: BaseClient,
         pattern: str,
         version: int | None = None,
         prefix: str | None = None,
@@ -561,7 +573,7 @@ class BaseClient(Generic[Backend]):
             raise ConnectionInterrupted(connection=client) from e
 
     def delete_many(
-        self,
+        self: BaseClient,
         keys: Iterable[KeyT],
         version: int | None = None,
         client: Backend | Any | None = None,
@@ -581,7 +593,7 @@ class BaseClient(Generic[Backend]):
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 
-    def clear(self, client: Backend | Any | None = None) -> bool:
+    def clear(self: BaseClient, client: Backend | Any | None = None) -> bool:
         """
         Flush all cache keys.
         """
@@ -594,7 +606,7 @@ class BaseClient(Generic[Backend]):
             raise ConnectionInterrupted(connection=client) from e
 
     def mget(
-        self,
+        self: BaseClient,
         keys: Iterable[KeyT],
         version: int | None = None,
         client: Backend | Any | None = None,
@@ -625,7 +637,7 @@ class BaseClient(Generic[Backend]):
         return recovered_data
 
     def get_many(
-        self,
+        self: BaseClient,
         keys: Iterable[KeyT],
         version: int | None = None,
         client: Backend | None = None,
@@ -654,7 +666,7 @@ class BaseClient(Generic[Backend]):
         return recovered_data
 
     def set_many(
-        self,
+        self: BaseClient,
         data: Dict[KeyT, EncodableT],
         timeout: float | None = DEFAULT_TIMEOUT,
         version: int | None = None,
@@ -678,7 +690,7 @@ class BaseClient(Generic[Backend]):
             raise ConnectionInterrupted(connection=client) from e
 
     def mset(
-        self,
+        self: BaseClient,
         data: Dict[KeyT, Any],
         timeout: float | None = None,
         version: int | None = None,
@@ -697,7 +709,7 @@ class BaseClient(Generic[Backend]):
             raise ConnectionInterrupted(connection=client) from e
 
     def _incr(
-        self,
+        self: BaseClient,
         key: KeyT,
         delta: int = 1,
         version: int | None = None,
@@ -750,7 +762,7 @@ class BaseClient(Generic[Backend]):
         return value
 
     def incr(
-        self,
+        self: BaseClient,
         key: KeyT,
         delta: int = 1,
         version: int | None = None,
@@ -771,7 +783,7 @@ class BaseClient(Generic[Backend]):
         )
 
     def decr(
-        self,
+        self: BaseClient,
         key: KeyT,
         delta: int = 1,
         version: int | None = None,
@@ -784,7 +796,10 @@ class BaseClient(Generic[Backend]):
         return self._incr(key=key, delta=-delta, version=version, client=client)
 
     def ttl(
-        self, key: KeyT, version: int | None = None, client: Backend | Any | None = None
+        self: BaseClient,
+        key: KeyT,
+        version: int | None = None,
+        client: Backend | Any | None = None,
     ) -> int | None:
         """
         Executes TTL valkey command and return the "time-to-live" of specified key.
@@ -807,7 +822,10 @@ class BaseClient(Generic[Backend]):
         return None
 
     def pttl(
-        self, key: KeyT, version: int | None = None, client: Backend | Any | None = None
+        self: BaseClient,
+        key: KeyT,
+        version: int | None = None,
+        client: Backend | Any | None = None,
     ) -> int | None:
         """
         Executes PTTL valkey command and return the "time-to-live" of specified key.
@@ -830,7 +848,10 @@ class BaseClient(Generic[Backend]):
         return None
 
     def has_key(
-        self, key: KeyT, version: int | None = None, client: Backend | Any | None = None
+        self: BaseClient,
+        key: KeyT,
+        version: int | None = None,
+        client: Backend | Any | None = None,
     ) -> bool:
         """
         Test if key exists.
@@ -845,7 +866,7 @@ class BaseClient(Generic[Backend]):
             raise ConnectionInterrupted(connection=client) from e
 
     def iter_keys(
-        self,
+        self: BaseClient,
         search: str,
         itersize: int | None = None,
         client: Backend | Any | None = None,
@@ -863,7 +884,7 @@ class BaseClient(Generic[Backend]):
             yield self.reverse_key(item.decode())
 
     def keys(
-        self,
+        self: BaseClient,
         search: str,
         version: int | None = None,
         client: Backend | Any | None = None,
@@ -884,7 +905,7 @@ class BaseClient(Generic[Backend]):
             raise ConnectionInterrupted(connection=client) from e
 
     def sadd(
-        self,
+        self: BaseClient,
         key: KeyT,
         *values: Any,
         version: int | None = None,
@@ -897,7 +918,7 @@ class BaseClient(Generic[Backend]):
         return client.sadd(key, *encoded_values)
 
     def scard(
-        self,
+        self: BaseClient,
         key: KeyT,
         version: int | None = None,
         client: Backend | Any | None = None,
@@ -908,7 +929,7 @@ class BaseClient(Generic[Backend]):
         return client.scard(key)
 
     def sdiff(
-        self,
+        self: BaseClient,
         *keys: KeyT,
         version: int | None = None,
         client: Backend | Any | None = None,
@@ -919,7 +940,7 @@ class BaseClient(Generic[Backend]):
         return {self.decode(value) for value in client.sdiff(*nkeys)}
 
     def sdiffstore(
-        self,
+        self: BaseClient,
         dest: KeyT,
         *keys: KeyT,
         version_dest: int | None = None,
@@ -933,7 +954,7 @@ class BaseClient(Generic[Backend]):
         return client.sdiffstore(dest, *nkeys)
 
     def sinter(
-        self,
+        self: BaseClient,
         *keys: KeyT,
         version: int | None = None,
         client: Backend | Any | None = None,
@@ -944,7 +965,7 @@ class BaseClient(Generic[Backend]):
         return {self.decode(value) for value in client.sinter(*nkeys)}
 
     def sinterstore(
-        self,
+        self: BaseClient,
         dest: KeyT,
         *keys: KeyT,
         version: int | None = None,
@@ -957,7 +978,7 @@ class BaseClient(Generic[Backend]):
         return client.sinterstore(dest, *nkeys)
 
     def smismember(
-        self,
+        self: BaseClient,
         key: KeyT,
         *members: Any,
         version: int | None = None,
@@ -971,7 +992,7 @@ class BaseClient(Generic[Backend]):
         return [bool(value) for value in client.smismember(key, *encoded_members)]
 
     def sismember(
-        self,
+        self: BaseClient,
         key: KeyT,
         member: Any,
         version: int | None = None,
@@ -984,7 +1005,7 @@ class BaseClient(Generic[Backend]):
         return bool(client.sismember(key, member))
 
     def smembers(
-        self,
+        self: BaseClient,
         key: KeyT,
         version: int | None = None,
         client: Backend | Any | None = None,
@@ -995,7 +1016,7 @@ class BaseClient(Generic[Backend]):
         return {self.decode(value) for value in client.smembers(key)}
 
     def smove(
-        self,
+        self: BaseClient,
         source: KeyT,
         destination: KeyT,
         member: Any,
@@ -1010,7 +1031,7 @@ class BaseClient(Generic[Backend]):
         return client.smove(source, destination, member)
 
     def spop(
-        self,
+        self: BaseClient,
         key: KeyT,
         count: int | None = None,
         version: int | None = None,
@@ -1023,7 +1044,7 @@ class BaseClient(Generic[Backend]):
         return self._decode_iterable_result(result)
 
     def srandmember(
-        self,
+        self: BaseClient,
         key: KeyT,
         count: int | None = None,
         version: int | None = None,
@@ -1036,7 +1057,7 @@ class BaseClient(Generic[Backend]):
         return self._decode_iterable_result(result, convert_to_set=False)
 
     def srem(
-        self,
+        self: BaseClient,
         key: KeyT,
         *members: EncodableT,
         version: int | None = None,
@@ -1049,7 +1070,7 @@ class BaseClient(Generic[Backend]):
         return client.srem(key, *nmembers)
 
     def sscan(
-        self,
+        self: BaseClient,
         key: KeyT,
         match: str | None = None,
         count: int = 10,
@@ -1072,7 +1093,7 @@ class BaseClient(Generic[Backend]):
         return {self.decode(value) for value in result}
 
     def sscan_iter(
-        self,
+        self: BaseClient,
         key: KeyT,
         match: str | None = None,
         count: int = 10,
@@ -1094,7 +1115,7 @@ class BaseClient(Generic[Backend]):
             yield self.decode(value)
 
     def sunion(
-        self,
+        self: BaseClient,
         *keys: KeyT,
         version: int | None = None,
         client: Backend | Any | None = None,
@@ -1105,7 +1126,7 @@ class BaseClient(Generic[Backend]):
         return {self.decode(value) for value in client.sunion(*nkeys)}
 
     def sunionstore(
-        self,
+        self: BaseClient,
         destination: Any,
         *keys: KeyT,
         version: int | None = None,
@@ -1135,7 +1156,7 @@ class BaseClient(Generic[Backend]):
         self._clients = [None] * num_clients
 
     def touch(
-        self,
+        self: BaseClient,
         key: KeyT,
         timeout: float | None = DEFAULT_TIMEOUT,
         version: int | None = None,
@@ -1159,7 +1180,7 @@ class BaseClient(Generic[Backend]):
         return bool(client.pexpire(key, timeout))
 
     def hset(
-        self,
+        self: BaseClient,
         name: str,
         key: KeyT,
         value: EncodableT,
@@ -1176,7 +1197,7 @@ class BaseClient(Generic[Backend]):
         return client.hset(name, nkey, nvalue)
 
     def hdel(
-        self,
+        self: BaseClient,
         name: str,
         key: KeyT,
         version: int | None = None,
@@ -1191,7 +1212,7 @@ class BaseClient(Generic[Backend]):
         return client.hdel(name, nkey)
 
     def hlen(
-        self,
+        self: BaseClient,
         name: str,
         client: Backend | Any | None = None,
     ) -> int:
@@ -1202,7 +1223,7 @@ class BaseClient(Generic[Backend]):
         return client.hlen(name)
 
     def hkeys(
-        self,
+        self: BaseClient,
         name: str,
         client: Backend | Any | None = None,
     ) -> List[Any]:
@@ -1216,7 +1237,7 @@ class BaseClient(Generic[Backend]):
             raise ConnectionInterrupted(connection=client) from e
 
     def hexists(
-        self,
+        self: BaseClient,
         name: str,
         key: KeyT,
         version: int | None = None,
@@ -1228,3 +1249,927 @@ class BaseClient(Generic[Backend]):
         client = self._get_client(write=False, client=client)
         nkey = self.make_key(key, version=version)
         return client.hexists(name, nkey)
+
+
+class AsyncClientCommands(Generic[Backend]):
+    def __getattr__(self, item):
+        if item.startswith("a"):
+            attr = getattr(self, item[1:], ATTR_DOES_NOT_EXIST)
+            if attr is not ATTR_DOES_NOT_EXIST:
+                return attr
+        raise AttributeError(
+            f"{self.__class__.__name__} object has no attribute {item}"
+        )
+
+    async def _get_client(self, write=True, tried=None, client=None):
+        if client:
+            return client
+        return await self.get_client(write, tried)
+
+    async def get_client(
+        self,
+        write: bool = True,
+        tried: list[int] | None = None,
+    ) -> Backend | Any:
+        index = self.get_next_client_index(write=write, tried=tried)
+
+        if self._clients[index] is None:
+            self._clients[index] = await self.connect(index)
+
+        return self._clients[index]
+
+    async def get_client_with_index(
+        self, write: bool = True, tried: list[int] | None = None
+    ) -> tuple[Backend, int]:
+        index = self.get_next_client_index(write=write, tried=tried)
+
+        if self._clients[index] is None:
+            self._clients[index] = await self.connect(index)
+
+        return self._clients[index], index
+
+    async def connect(self, index: int = 0) -> Backend | Any:
+        return await self.connection_factory.connect(self._server[index])
+
+    async def disconnect(self, index: int = 0, client=None):
+        if client is None:
+            client = self._clients[index]
+
+        if client is not None:
+            await self.connection_factory.disconnect(client)
+
+    async def set(
+        self,
+        key,
+        value,
+        timeout=DEFAULT_TIMEOUT,
+        version=None,
+        client: Backend | Any | None = None,
+        nx=False,
+        xx=False,
+    ) -> bool:
+        nkey = self.make_key(key, version=version)
+        nvalue = self.encode(value)
+
+        if timeout is DEFAULT_TIMEOUT:
+            timeout = self._backend.default_timeout
+
+        original_client = client
+        tried = []
+
+        while True:
+            try:
+                if client is None:
+                    client, index = await self.get_client_with_index(
+                        write=True, tried=tried
+                    )
+
+                if timeout is not None:
+                    # convert to milliseconds
+                    timeout = int(timeout) * 1000
+
+                    if timeout <= 0:
+                        if nx:
+                            return not await self.has_key(
+                                key, version=version, client=client
+                            )
+
+                        return bool(
+                            await self.delete(key, client=client, version=version)
+                        )
+                return await client.set(nkey, nvalue, nx=nx, px=timeout, xx=xx)
+
+            except _main_exceptions as e:
+                if (
+                    not original_client
+                    and not self._replica_read_only
+                    and len(tried) < len(self._server)
+                ):
+                    tried.append(index)
+                    client = None
+                    continue
+
+                raise ConnectionInterrupted(connection=client) from e
+
+    async def incr_version(
+        self,
+        key,
+        delta: int = 1,
+        version: int | None = None,
+        client: Backend | None | Any = None,
+    ) -> int:
+        client = await self._get_client(write=True, client=client)
+
+        new_key, old_key, value, ttl, version = await self._incr_version(
+            key, delta, version, client
+        )
+
+        await self.set(new_key, value, timeout=ttl, client=client)
+        await self.delete(old_key, client=client)
+        return version + delta
+
+    async def _incr_version(self, key, delta, version, client) -> tuple:
+        if version is None:
+            version = self._backend.version
+
+        old_key = self.make_key(key, version)
+        value = await self.get(old_key, version=version, client=client)
+
+        try:
+            ttl = await self.ttl(old_key, version=version, client=client)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
+        if value is None:
+            error_message = f"Key '{old_key!r}' does not exist"
+            raise ValueError(error_message)
+
+        if isinstance(key, CacheKey):
+            new_key = self.make_key(key.original_key(), version=version + delta)
+        else:
+            new_key = self.make_key(key, version=version + delta)
+
+        return new_key, old_key, value, ttl, version
+
+    async def add(
+        self,
+        key,
+        value,
+        timeout: float | int | None = DEFAULT_TIMEOUT,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> bool:
+        return await self.set(
+            key, value, timeout, version=version, client=client, nx=True
+        )
+
+    async def get(
+        self,
+        key,
+        default: Any | None = None,
+        version: int | None = None,
+        client: Backend | None | Any = None,
+    ) -> Any:
+        client = await self._get_client(write=False, client=client)
+
+        key = self.make_key(key, version=version)
+
+        try:
+            value = await client.get(key)
+
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
+        if value is None:
+            return default
+
+        return self.decode(value)
+
+    async def persist(
+        self, key, version: int | None = None, client: Backend | Any | None = None
+    ) -> bool:
+        client = await self._get_client(write=True, client=client)
+        key = self.make_key(key, version=version)
+
+        return await client.persist(key)
+
+    async def expire(
+        self,
+        key,
+        timeout,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> bool:
+        if timeout is DEFAULT_TIMEOUT:
+            timeout = self._backend.default_timeout
+
+        client = await self._get_client(write=True, client=client)
+
+        key = self.make_key(key, version=version)
+
+        return await client.expire(key, timeout)
+
+    async def expire_at(
+        self, key, when, version: int | None = None, client: Backend | Any | None = None
+    ) -> bool:
+        client = await self._get_client(write=True, client=client)
+
+        key = self.make_key(key, version=version)
+
+        return await client.expireat(key, when)
+
+    async def pexpire(
+        self,
+        key,
+        timeout,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> bool:
+        if timeout is DEFAULT_TIMEOUT:
+            timeout = self._backend.default_timeout
+
+        client = await self._get_client(write=True, client=client)
+
+        key = self.make_key(key, version=version)
+
+        return await client.pexpire(key, timeout)
+
+    async def pexpire_at(
+        self, key, when, version: int | None = None, client: Backend | Any | None = None
+    ) -> bool:
+        client = await self._get_client(write=True, client=client)
+
+        key = self.make_key(key, version=version)
+
+        return await client.pexpireat(key, when)
+
+    async def get_lock(
+        self,
+        key,
+        version: int | None = None,
+        timeout: float | int | None = None,
+        sleep: float = 0.1,
+        blocking: bool = True,
+        blocking_timeout: float | None = None,
+        client: Backend | Any | None = None,
+        lock_class=None,
+        thread_local: bool = True,
+    ) -> "AsyncLock":
+        """Returns a Lock object, the object then should be used in an async context manager"""
+
+        client = await self._get_client(write=True, client=client)
+
+        key = self.make_key(key, version=version)
+
+        return client.lock(
+            key,
+            timeout=timeout,
+            sleep=sleep,
+            blocking=blocking,
+            blocking_timeout=blocking_timeout,
+            lock_class=lock_class,
+            thread_local=thread_local,
+        )
+
+    # TODO: delete this in future releases
+    lock = aget_lock = get_lock
+
+    async def delete(
+        self,
+        key,
+        version: int | None = None,
+        prefix: str | None = None,
+        client: Backend | Any | None = None,
+    ) -> int:
+        client = await self._get_client(write=True, client=client)
+
+        try:
+            return await client.delete(
+                self.make_key(key, version=version, prefix=prefix)
+            )
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
+    async def delete_pattern(
+        self,
+        pattern: str,
+        version: int | None = None,
+        prefix: str | None = None,
+        client: Backend | Any | None = None,
+        itersize: int | None = None,
+    ) -> int:
+        """
+        Remove all keys matching a pattern.
+        """
+        client = await self._get_client(write=True, client=client)
+
+        pattern = self.make_pattern(pattern, version=version, prefix=prefix)
+
+        try:
+            count = 0
+            pipeline = await client.pipeline()
+
+            async with contextlib.aclosing(
+                client.scan_iter(match=pattern, count=itersize)
+            ) as values:
+                async for key in values:
+                    await pipeline.delete(key)
+                    count += 1
+                await pipeline.execute()
+
+            return count
+
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
+    async def delete_many(
+        self, keys, version: int | None = None, client: Backend | None = None
+    ) -> int:
+        """Remove multiple keys at once."""
+        keys = [self.make_key(k, version=version) for k in keys]
+
+        if not keys:
+            return 0
+
+        client = await self._get_client(write=True, client=client)
+
+        try:
+            return await client.delete(*keys)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
+    async def clear(self, client: Backend | Any | None = None) -> bool:
+        """
+        Flush all cache keys.
+        """
+
+        client = await self._get_client(write=True, client=client)
+
+        try:
+            return await client.flushdb()
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
+    async def mget(
+        self, keys, version: int | None = None, client: Backend | Any | None = None
+    ) -> dict:
+        if not keys:
+            return {}
+
+        client = await self._get_client(write=False, client=client)
+
+        recovered_data = {}
+
+        map_keys = {self.make_key(k, version=version): k for k in keys}
+
+        try:
+            results = await client.mget(*map_keys)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
+        for key, value in zip(map_keys, results):
+            if value is None:
+                continue
+            recovered_data[map_keys[key]] = self.decode(value)
+
+        return recovered_data
+
+    async def get_many(
+        self,
+        keys: Iterable[KeyT],
+        version: int | None = None,
+        client: Backend | None = None,
+    ):
+        """
+        non-atomic bulk method.
+        get values of the provided keys.
+        """
+        client = await self._get_client(write=False, client=client)
+
+        try:
+            pipeline = await client.pipeline()
+            for key in keys:
+                key = self.make_key(key, version=version)
+                await pipeline.get(key)
+            values = await pipeline.execute()
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
+        recovered_data = {}
+        for key, value in zip(keys, values):
+            if not value:
+                continue
+            recovered_data[key] = self.decode(value)
+        return recovered_data
+
+    async def set_many(
+        self,
+        data: dict,
+        timeout: float | int | None = None,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> None:
+        client = await self._get_client(write=True, client=client)
+
+        try:
+            pipeline = await client.pipeline()
+            for key, value in data.items():
+                await self.set(key, value, timeout, version=version, client=pipeline)
+            await pipeline.execute()
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
+    async def mset(
+        self,
+        data: Dict[KeyT, Any],
+        timeout: float | None = None,
+        version: int | None = None,
+        client: Backend | None = None,
+    ) -> None:
+        client = await self._get_client(write=True, client=client)
+
+        data = {
+            self.make_key(k, version=version): self.encode(v) for k, v in data.items()
+        }
+
+        try:
+            await client.mset(data)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
+    async def _incr(
+        self,
+        key,
+        delta: int = 1,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+        ignoree_key_check: bool = False,
+    ) -> int:
+        client = await self._get_client(write=True, client=client)
+        key = self.make_key(key, version=version)
+
+        try:
+            try:
+                # if key expired after exists check, then we get
+                # key with wrong value and ttl -1.
+                # use lua script for atomicity
+                if not ignoree_key_check:
+                    lua = """
+                    local exists = server.call('EXISTS', KEYS[1])
+                    if (exists == 1) then
+                        return server.call('INCRBY', KEYS[1], ARGV[1])
+                    else return false end
+                    """
+                else:
+                    lua = """
+                    return server.call('INCRBY', KEYS[1], ARGV[1])
+                    """
+                value = await client.eval(lua, 1, key, delta)
+                if value is None:
+                    error_message = f"Key '{key!r}' not found"
+                    raise ValueError(error_message)
+            except ResponseError as e:
+                # if cached value or total value is greater than 64-bit signed
+                # integer.
+                # elif int is encoded. so valkey sees the data as string.
+                # In these situations valkey will throw ResponseError
+
+                # try to keep TTL of key
+                timeout = await self.ttl(key, version=version, client=client)
+
+                if timeout == -2:
+                    error_message = f"Key '{key!r}' not found"
+                    raise ValueError(error_message) from e
+                value = await self.get(key, version=version, client=client) + delta
+                await self.set(
+                    key, value, version=version, timeout=timeout, client=client
+                )
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
+        return value
+
+    async def incr(
+        self,
+        key,
+        delta: int = 1,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+        ignore_key_check: bool = False,
+    ) -> int:
+        """
+        Add delta to value in the cache. If the key does not exist, raise a
+        ValueError exception. if ignore_key_check=True then the key will be
+        created and set to the delta value by default.
+        """
+        return await self._incr(
+            key,
+            delta,
+            version=version,
+            client=client,
+            ignoree_key_check=ignore_key_check,
+        )
+
+    async def decr(
+        self,
+        key,
+        delta: int = 1,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> int:
+        """
+        Decrease delta to value in the cache. If the key does not exist, raise a
+        ValueError exception.
+        """
+        return await self._incr(key, delta=-delta, version=version, client=client)
+
+    async def ttl(
+        self, key, version: int | None = None, client: Backend | Any | None = None
+    ) -> int | None:
+        """
+        Executes TTL valkey command and return the "time-to-live" of specified key.
+        If key is a non-volatile key, it returns None.
+        """
+        client = await self._get_client(write=False, client=client)
+        key = self.make_key(key, version=version)
+        if not await client.exists(key):
+            return 0
+
+        t = await client.ttl(key)
+        if t >= 0:
+            return t
+        if t == -2:
+            return 0
+
+        return None
+
+    async def pttl(
+        self, key, version: int | None = None, client: Backend | Any | None = None
+    ) -> int | None:
+        """
+        Executes PTTL valkey command and return the "time-to-live" of specified key.
+        If key is a non-volatile key, it returns None.
+        """
+        client = await self._get_client(write=False, client=client)
+
+        key = self.make_key(key, version=version)
+        if not await client.exists(key):
+            return 0
+
+        t = await client.pttl(key)
+
+        if t >= 0:
+            return t
+        if t == -2:
+            return 0
+
+        return None
+
+    async def has_key(
+        self, key, version: int | None = None, client: Backend | Any | None = None
+    ) -> bool:
+        """
+        Test if key exists.
+        """
+        client = await self._get_client(write=False, client=client)
+
+        key = self.make_key(key, version=version)
+        try:
+            return await client.exists(key) == 1
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
+    async def iter_keys(
+        self,
+        search: str,
+        itersize: int | None = None,
+        client: Backend | Any | None = None,
+        version: int | None = None,
+    ) -> AsyncGenerator:
+        """
+        Same as keys, but uses cursors
+        for make memory efficient keys iteration.
+        """
+        client = await self._get_client(write=False, client=client)
+        pattern = self.make_pattern(search, version=version)
+        async with contextlib.aclosing(
+            client.scan_iter(match=pattern, count=itersize)
+        ) as values:
+            async for item in values:
+                yield self.reverse_key(item.decode())
+
+    async def keys(
+        self,
+        search: str,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> list[Any]:
+        client = await self._get_client(write=False, client=client)
+
+        pattern = self.make_pattern(search, version=version)
+        try:
+            return [self.reverse_key(k.decode()) for k in await client.keys(pattern)]
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
+    async def sadd(
+        self,
+        key,
+        *values: Any,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> int:
+        client = await self._get_client(write=True, client=client)
+        key = self.make_key(key, version=version)
+        encoded_values = [self.encode(value) for value in values]
+
+        return await client.sadd(key, *encoded_values)
+
+    async def scard(
+        self, key, version: int | None = None, client: Backend | Any | None = None
+    ) -> int:
+        client = await self._get_client(write=False, client=client)
+        key = self.make_key(key, version=version)
+        return await client.scard(key)
+
+    async def sdiff(
+        self, *keys, version: int | None = None, client: Backend | Any | None = None
+    ) -> Set[Any]:
+        client = await self._get_client(write=False, client=client)
+        nkeys = [self.make_key(key, version=version) for key in keys]
+        return {self.decode(value) for value in await client.sdiff(*nkeys)}
+
+    async def sdiffstore(
+        self,
+        dest,
+        *keys,
+        version_dest: int | None = None,
+        version_keys: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> int:
+        client = await self._get_client(write=True, client=client)
+        dest = self.make_key(dest, version=version_dest)
+        nkeys = [self.make_key(key, version=version_keys) for key in keys]
+        return await client.sdiffstore(dest, *nkeys)
+
+    async def sinter(
+        self, *keys, version: int | None = None, client: Backend | Any | None = None
+    ) -> Set[Any]:
+        client = await self._get_client(write=False, client=client)
+        nkeys = [self.make_key(key, version=version) for key in keys]
+        return {self.decode(value) for value in await client.sinter(*nkeys)}
+
+    async def sinterstore(
+        self,
+        dest,
+        *keys,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> int:
+        client = await self._get_client(write=True, client=client)
+        dest = self.make_key(dest, version=version)
+        nkeys = [self.make_key(key, version=version) for key in keys]
+
+        return await client.sinterstore(dest, *nkeys)
+
+    async def smismember(
+        self,
+        key,
+        *members: Any,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> list[bool]:
+        client = await self._get_client(write=False, client=client)
+
+        key = self.make_key(key, version=version)
+        encoded_members = [self.encode(member) for member in members]
+
+        return [bool(value) for value in await client.smismember(key, *encoded_members)]
+
+    async def sismember(
+        self,
+        key,
+        member: Any,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> bool:
+        client = await self._get_client(write=False, client=client)
+
+        key = self.make_key(key, version=version)
+        member = self.encode(member)
+        return bool(await client.sismember(key, member))
+
+    async def smembers(
+        self, key, version: int | None = None, client: Backend | Any | None = None
+    ) -> Set[Any]:
+        client = await self._get_client(write=False, client=client)
+
+        key = self.make_key(key, version=version)
+        return {self.decode(value) for value in await client.smembers(key)}
+
+    async def smove(
+        self,
+        source,
+        destination,
+        member: Any,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> bool:
+        client = await self._get_client(write=False, client=client)
+        source = self.make_key(source, version=version)
+        destination = self.make_key(destination, version=version)
+        member = self.encode(member)
+        return await client.smove(source, destination, member)
+
+    async def spop(
+        self,
+        key,
+        count: int | None = None,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> Set | Any:
+        client = await self._get_client(write=True, client=client)
+        nkey = self.make_key(key, version=version)
+        result = await client.spop(nkey, count)
+        return self._decode_iterable_result(result)
+
+    async def srandmember(
+        self,
+        key,
+        count: int | None = None,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> list | Any:
+        client = await self._get_client(write=False, client=client)
+        key = self.make_key(key, version=version)
+        result = await client.srandmember(key, count)
+        return self._decode_iterable_result(result, convert_to_set=False)
+
+    async def srem(
+        self,
+        key,
+        *members,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> int:
+        client = await self._get_client(write=False, client=client)
+
+        key = self.make_key(key, version=version)
+        nmembers = [self.encode(member) for member in members]
+        return await client.srem(key, *nmembers)
+
+    async def sscan(
+        self,
+        key,
+        match: str | None = None,
+        count: int = 10,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> Set[Any]:
+        # TODO check this is correct
+        if self._has_compression_enabled() and match:
+            error_message = "Using match with compression is not supported."
+            raise ValueError(error_message)
+
+        client = await self._get_client(write=False, client=client)
+
+        key = self.make_key(key, version=version)
+        cursor, result = await client.sscan(
+            key,
+            match=cast(PatternT, self.encode(match)) if match else None,
+            count=count,
+        )
+        return {self.decode(value) for value in result}
+
+    async def sscan_iter(
+        self,
+        key,
+        match: str | None = None,
+        count: int = 10,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ):
+        if self._has_compression_enabled() and match:
+            error_message = "Using match with compression is not supported."
+            raise ValueError(error_message)
+
+        client = await self._get_client(write=False, client=client)
+
+        key = self.make_key(key, version=version)
+
+        async with contextlib.aclosing(
+            client.sscan_iter(
+                key,
+                match=cast(PatternT, self.encode(match)) if match else None,
+                count=count,
+            )
+        ) as values:
+            async for value in values:
+                yield self.decode(value)
+
+    async def sunion(
+        self,
+        *keys,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> Set[Any]:
+        client = await self._get_client(write=False, client=client)
+
+        nkeys = [self.make_key(key, version=version) for key in keys]
+        return {self.decode(value) for value in await client.sunion(*nkeys)}
+
+    async def sunionstore(
+        self,
+        destination: Any,
+        *keys,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> int:
+        client = await self._get_client(write=True, client=client)
+        destination = self.make_key(destination, version=version)
+        encoded_keys = [self.make_key(key, version=version) for key in keys]
+        return await client.sunionstore(destination, *encoded_keys)
+
+    async def close(self) -> None:
+        close_flag = self._options.get(
+            "CLOSE_CONNECTION",
+            getattr(settings, "DJANGO_VALKEY_CLOSE_CONNECTION", False),
+        )
+        if close_flag:
+            await self._close()
+
+    async def _close(self) -> None:
+        """
+        default implementation: Override in custom client
+        """
+        num_clients = len(self._clients)
+        for index in range(num_clients):
+            # TODO: check disconnect and close
+            await self.disconnect(index=index)
+        self._clients = [None] * num_clients
+
+    async def touch(
+        self,
+        key,
+        timeout: float | int | None = DEFAULT_TIMEOUT,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> bool:
+        """
+        Sets a new expiration for a key.
+        """
+        if timeout is DEFAULT_TIMEOUT:
+            timeout = self._backend.default_timeout
+
+        client = await self._get_client(write=True, client=client)
+
+        key = self.make_key(key, version=version)
+        if timeout is None:
+            return bool(await client.persist(key))
+
+        # convert timeout to milliseconds
+        timeout = int(timeout * 1000)
+        return bool(await client.pexpire(key, timeout))
+
+    async def hset(
+        self,
+        name: str,
+        key,
+        value,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> int:
+        """
+        Sets the value of hash name at key to value.
+        Returns the number of fields added to the hash.
+        """
+        client = await self._get_client(write=True, client=client)
+
+        nkey = self.make_key(key, version)
+        nvalue = self.encode(value)
+
+        return await client.hset(name, nkey, nvalue)
+
+    async def hdel(
+        self,
+        name: str,
+        key,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> int:
+        """
+        Remove keys from hash name.
+        Returns the number of fields deleted from the hash.
+        """
+        client = await self._get_client(write=True, client=client)
+        nkey = self.make_key(key, version=version)
+        return await client.hdel(name, nkey)
+
+    async def hlen(self, name: str, client: Backend | Any | None = None) -> int:
+        """
+        Return the number of items in hash name.
+        """
+        client = await self._get_client(write=False, client=client)
+        return await client.hlen(name)
+
+    async def hkeys(self, name: str, client: Backend | Any | None = None) -> list[Any]:
+        client = await self._get_client(write=False, client=client)
+
+        try:
+            return [self.reverse_key(k.decode()) for k in await client.hkeys(name)]
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
+    async def hexists(
+        self,
+        name: str,
+        key,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> bool:
+        """
+        Return True if key exists in hash name, else False.
+        """
+        client = await self._get_client(write=False, client=client)
+        nkey = self.make_key(key, version=version)
+        return await client.hexists(name, nkey)
