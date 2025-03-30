@@ -8,11 +8,13 @@ from unittest.mock import patch, AsyncMock
 
 import pytest
 import pytest_asyncio
+
+from pytest_django.fixtures import SettingsWrapper
+from pytest_mock import MockerFixture
+
 from django.core.cache import caches
 from django.core.cache.backends.base import DEFAULT_TIMEOUT
 from django.test import override_settings
-from pytest_django.fixtures import SettingsWrapper
-from pytest_mock import MockerFixture
 
 from django_valkey.async_cache.cache import AsyncValkeyCache
 from django_valkey.async_cache.client import AsyncHerdClient
@@ -274,17 +276,17 @@ class TestAsyncDjangoValkeyCache:
             default_timeout = cache.client._backend.default_timeout
             herd_timeout = (default_timeout + settings.CACHE_HERD_TIMEOUT) * 1000
             herd_pack_value = await cache.client._pack(value, default_timeout)
-            mocked_set.assert_called_once_with(
-                await cache.client.make_key(key, version=None),
-                await cache.client.encode(herd_pack_value),
+            mocked_set.assert_awaited_once_with(
+                cache.client.make_key(key, version=None),
+                cache.client.encode(herd_pack_value),
                 nx=False,
                 px=herd_timeout,
                 xx=False,
             )
         else:
-            mocked_set.assert_called_once_with(
-                await cache.client.make_key(key, version=None),
-                await cache.client.encode(value),
+            mocked_set.assert_awaited_once_with(
+                cache.client.make_key(key, version=None),
+                cache.client.encode(value),
                 nx=False,
                 px=cache.client._backend.default_timeout * 1000,
                 xx=False,
@@ -544,7 +546,7 @@ class TestAsyncDjangoValkeyCache:
 
         await cache.adelete_pattern("*foo-a*", itersize=2)
 
-        client_mock.adelete_pattern.assert_called_once_with("*foo-a*", itersize=2)
+        client_mock.adelete_pattern.assert_awaited_once_with("*foo-a*", itersize=2)
 
     @patch(
         "django_valkey.async_cache.cache.AsyncValkeyCache.client",
@@ -563,7 +565,7 @@ class TestAsyncDjangoValkeyCache:
 
         await cache.adelete_pattern("*foo-a*")
 
-        client_mock.adelete_pattern.assert_called_once_with(
+        client_mock.adelete_pattern.assert_awaited_once_with(
             "*foo-a*", itersize=expected_count
         )
 
@@ -573,8 +575,8 @@ class TestAsyncDjangoValkeyCache:
         await cache.aclose()
 
     async def test_close_client(self, cache: AsyncValkeyCache, mocker: MockerFixture):
-        mock = mocker.patch.object(cache.client, "close", AsyncMock)
-        await cache.aclose()
+        mock = mocker.patch.object(cache.client, "close")
+        await cache.close()
         assert mock.called
 
     async def test_ttl(self, cache: AsyncValkeyCache):
