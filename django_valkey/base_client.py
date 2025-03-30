@@ -127,6 +127,75 @@ class BaseClient(Generic[Backend]):
 
         return random.randint(1, len(self._server) - 1)
 
+    def decode(self, value: bytes) -> Any:
+        """
+        Decode the given value.
+        """
+        try:
+            if value.isdigit():
+                value = int(value)
+            else:
+                value = float(value)
+        except (ValueError, TypeError):
+            # Handle little values, chosen to be not compressed
+            with suppress(CompressorError):
+                value = self._compressor.decompress(value)
+            value = self._serializer.loads(value)
+        return value
+
+    def encode(self, value: EncodableT) -> bytes | int | float:
+        """
+        Encode the given value.
+        """
+
+        if type(value) is not int and type(value) is not float:
+            value = self._serializer.dumps(value)
+            return self._compressor.compress(value)
+
+        return value
+
+    def _decode_iterable_result(
+        self, result: Any, convert_to_set: bool = True
+    ) -> List[Any] | Any | None:
+        if result is None:
+            return None
+        if isinstance(result, list):
+            if convert_to_set:
+                return {self.decode(value) for value in result}
+            return [self.decode(value) for value in result]
+        return self.decode(result)
+
+    def make_key(
+        self, key: KeyT, version: int | None = None, prefix: str | None = None
+    ) -> KeyT:
+        """Return key as a CacheKey instance so it has additional methods"""
+        if isinstance(key, CacheKey):
+            return key
+
+        if prefix is None:
+            prefix = self._backend.key_prefix
+
+        if version is None:
+            version = self._backend.version
+
+        return CacheKey(self._backend.key_func(key, prefix, version))
+
+    def make_pattern(
+        self, pattern: str, version: int | None = None, prefix: str | None = None
+    ) -> KeyT:
+        if isinstance(pattern, CacheKey):
+            return pattern
+
+        if prefix is None:
+            prefix = self._backend.key_prefix
+        prefix = glob_escape(prefix)
+
+        if version is None:
+            version = self._backend.version
+        version_str = glob_escape(str(version))
+
+        return CacheKey(self._backend.key_func(pattern, prefix, version_str))
+
     def _get_client(self, write=True, tried=None, client=None):
         if client:
             return client
@@ -524,44 +593,6 @@ class BaseClient(Generic[Backend]):
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 
-    def decode(self, value: bytes) -> Any:
-        """
-        Decode the given value.
-        """
-        try:
-            if value.isdigit():
-                value = int(value)
-            else:
-                value = float(value)
-        except (ValueError, TypeError):
-            # Handle little values, chosen to be not compressed
-            with suppress(CompressorError):
-                value = self._compressor.decompress(value)
-            value = self._serializer.loads(value)
-        return value
-
-    def encode(self, value: EncodableT) -> bytes | int | float:
-        """
-        Encode the given value.
-        """
-
-        if type(value) is not int and type(value) is not float:
-            value = self._serializer.dumps(value)
-            return self._compressor.compress(value)
-
-        return value
-
-    def _decode_iterable_result(
-        self, result: Any, convert_to_set: bool = True
-    ) -> List[Any] | Any | None:
-        if result is None:
-            return None
-        if isinstance(result, list):
-            if convert_to_set:
-                return {self.decode(value) for value in result}
-            return [self.decode(value) for value in result]
-        return self.decode(result)
-
     def mget(
         self,
         keys: Iterable[KeyT],
@@ -851,37 +882,6 @@ class BaseClient(Generic[Backend]):
             return [self.reverse_key(k.decode()) for k in client.keys(pattern)]
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
-
-    def make_key(
-        self, key: KeyT, version: int | None = None, prefix: str | None = None
-    ) -> KeyT:
-        """Return key as a CacheKey instance so it has additional methods"""
-        if isinstance(key, CacheKey):
-            return key
-
-        if prefix is None:
-            prefix = self._backend.key_prefix
-
-        if version is None:
-            version = self._backend.version
-
-        return CacheKey(self._backend.key_func(key, prefix, version))
-
-    def make_pattern(
-        self, pattern: str, version: int | None = None, prefix: str | None = None
-    ) -> KeyT:
-        if isinstance(pattern, CacheKey):
-            return pattern
-
-        if prefix is None:
-            prefix = self._backend.key_prefix
-        prefix = glob_escape(prefix)
-
-        if version is None:
-            version = self._backend.version
-        version_str = glob_escape(str(version))
-
-        return CacheKey(self._backend.key_func(pattern, prefix, version_str))
 
     def sadd(
         self,
