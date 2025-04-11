@@ -785,7 +785,7 @@ class TestAsyncDjangoValkeyCache:
         # Test generator object
         result = cache.aiter_keys("foo*")
         next_value = anext(result)  # noqa: F821
-        assert next_value is not None
+        assert await next_value is not None
 
     async def test_primary_replica_switching(self, cache: AsyncValkeyCache):
         # if isinstance(cache.client, ShardClient):
