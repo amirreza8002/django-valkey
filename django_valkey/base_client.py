@@ -2,6 +2,7 @@ import contextlib
 import random
 import re
 import socket
+import time
 from contextlib import suppress
 from typing import (
     Any,
@@ -2173,3 +2174,50 @@ class AsyncClientCommands(Generic[Backend]):
         client = await self._get_client(write=False, client=client)
         nkey = self.make_key(key, version=version)
         return await client.hexists(name, nkey)
+
+
+# Herd related code:
+class Marker:
+    """
+    Dummy class for use as
+    marker for herded keys.
+    """
+
+    pass
+
+
+def _is_expired(x, herd_timeout: int) -> bool:
+    if x >= herd_timeout:
+        return True
+    val = x + random.randint(1, herd_timeout)
+
+    if val >= herd_timeout:
+        return True
+    return False
+
+
+class HerdCommonMethods:
+    def __init__(self, *args, **kwargs):
+        self._marker = Marker()
+        self._herd_timeout: int = getattr(settings, "CACHE_HERD_TIMEOUT", 60)
+        super().__init__(*args, **kwargs)
+
+    def _pack(self, value: Any, timeout) -> tuple[Marker, Any, int]:
+        herd_timeout = (timeout or self._backend.default_timeout) + int(time.time())
+        return self._marker, value, herd_timeout
+
+    def _unpack(self, value: tuple[Marker, Any, int]) -> tuple[Any, bool]:
+        try:
+            marker, unpacked, herd_timeout = value
+        except (ValueError, TypeError):
+            return value, False
+
+        if not isinstance(marker, Marker):
+            return value, False
+
+        now = time.time()
+        if herd_timeout < now:
+            x = now - herd_timeout
+            return unpacked, _is_expired(x, self._herd_timeout)
+
+        return unpacked, False

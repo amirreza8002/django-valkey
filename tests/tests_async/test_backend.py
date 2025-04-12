@@ -271,7 +271,7 @@ class TestAsyncDjangoValkeyCache:
         if isinstance(cache.client, AsyncHerdClient):
             default_timeout = cache.client._backend.default_timeout
             herd_timeout = (default_timeout + settings.CACHE_HERD_TIMEOUT) * 1000
-            herd_pack_value = await cache.client._pack(value, default_timeout)
+            herd_pack_value = cache.client._pack(value, default_timeout)
             mocked_set.assert_awaited_once_with(
                 cache.client.make_key(key, version=None),
                 cache.client.encode(herd_pack_value),
