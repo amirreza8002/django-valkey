@@ -4,6 +4,7 @@ from typing import Iterable, cast
 
 import pytest
 from pytest import LogCaptureFixture
+
 import pytest_asyncio
 from pytest_django.fixtures import SettingsWrapper
 
