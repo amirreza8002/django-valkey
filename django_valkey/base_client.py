@@ -204,15 +204,16 @@ class ClientCommands(Generic[Backend]):
     def __contains__(self, key: KeyT) -> bool:
         return self.has_key(key)
 
-    def _get_client(self, write=True, tried=None, client=None):
+    def _get_client(self, write=True, tried=None, client=None, **kwargs):
         if client:
             return client
-        return self.get_client(write=write, tried=tried)
+        return self.get_client(write=write, tried=tried, **kwargs)
 
     def get_client(
         self: BaseClient,
         write: bool = True,
         tried: List[int] | None = None,
+        **kwargs,
     ) -> Backend | Any:
         """
         Method used for obtain a raw valkey client.
@@ -402,9 +403,9 @@ class ClientCommands(Generic[Backend]):
 
         Returns decoded value if key is found, the default if not.
         """
-        client = self._get_client(write=False, client=client)
-
         key = self.make_key(key, version=version)
+
+        client = self._get_client(write=False, client=client, key=key)
 
         try:
             value = client.get(key)
@@ -422,9 +423,9 @@ class ClientCommands(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> bool:
-        client = self._get_client(write=True, client=client)
-
         key = self.make_key(key, version=version)
+
+        client = self._get_client(write=True, client=client, key=key)
 
         return client.persist(key)
 
@@ -438,9 +439,9 @@ class ClientCommands(Generic[Backend]):
         if timeout is DEFAULT_TIMEOUT:
             timeout = self._backend.default_timeout  # type: ignore
 
-        client = self._get_client(write=True, client=client)
-
         key = self.make_key(key, version=version)
+
+        client = self._get_client(write=True, client=client, key=key)
 
         # for some strange reason mypy complains,
         # saying that timeout type is float | timedelta
@@ -457,9 +458,9 @@ class ClientCommands(Generic[Backend]):
         Set an expiry flag on a ``key`` to ``when``, which can be represented
         as an integer indicating unix time or a Python datetime object.
         """
-        client = self._get_client(write=True, client=client)
-
         key = self.make_key(key, version=version)
+
+        client = self._get_client(write=True, client=client, key=key)
 
         return client.expireat(key, when)
 
@@ -473,9 +474,9 @@ class ClientCommands(Generic[Backend]):
         if timeout is DEFAULT_TIMEOUT:
             timeout = self._backend.default_timeout  # type: ignore
 
-        client = self._get_client(write=True, client=client)
-
         key = self.make_key(key, version=version)
+
+        client = self._get_client(write=True, client=client, key=key)
 
         # TODO: see if the casting is necessary
         # for some strange reason mypy complains,
@@ -493,9 +494,9 @@ class ClientCommands(Generic[Backend]):
         Set an expiry flag on a ``key`` to ``when``, which can be represented
         as an integer indicating unix time or a Python datetime object.
         """
-        client = self._get_client(write=True, client=client)
-
         key = self.make_key(key, version=version)
+
+        client = self._get_client(write=True, client=client, key=key)
 
         return client.pexpireat(key, when)
 
@@ -511,9 +512,10 @@ class ClientCommands(Generic[Backend]):
         lock_class=None,
         thread_local: bool = True,
     ) -> "Lock":
-        client = self._get_client(write=True, client=client)
-
         key = self.make_key(key, version=version)
+
+        client = self._get_client(write=True, client=client, key=key)
+
         return client.lock(
             key,
             timeout=timeout,
@@ -537,10 +539,12 @@ class ClientCommands(Generic[Backend]):
         """
         Remove a key from the cache.
         """
-        client = self._get_client(write=True, client=client)
+        key = self.make_key(key, version=version, prefix=prefix)
+
+        client = self._get_client(write=True, client=client, key=key)
 
         try:
-            return client.delete(self.make_key(key, version=version, prefix=prefix))
+            return client.delete(key)
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 
@@ -717,9 +721,9 @@ class ClientCommands(Generic[Backend]):
         client: Backend | Any | None = None,
         ignore_key_check: bool = False,
     ) -> int:
-        client = self._get_client(write=True, client=client)
-
         key = self.make_key(key, version=version)
+
+        client = self._get_client(write=True, client=client, key=key)
 
         try:
             try:
@@ -806,9 +810,10 @@ class ClientCommands(Generic[Backend]):
         Executes TTL valkey command and return the "time-to-live" of specified key.
         If key is a non-volatile key, it returns None.
         """
-        client = self._get_client(write=False, client=client)
-
         key = self.make_key(key, version=version)
+
+        client = self._get_client(write=False, client=client, key=key)
+
         if not client.exists(key):
             return 0
 
@@ -832,9 +837,9 @@ class ClientCommands(Generic[Backend]):
         Executes PTTL valkey command and return the "time-to-live" of specified key.
         If key is a non-volatile key, it returns None.
         """
-        client = self._get_client(write=False, client=client)
-
         key = self.make_key(key, version=version)
+        client = self._get_client(write=False, client=client, key=key)
+
         if not client.exists(key):
             return 0
 
@@ -857,10 +862,9 @@ class ClientCommands(Generic[Backend]):
         """
         Test if key exists.
         """
-
-        client = self._get_client(write=False, client=client)
-
         key = self.make_key(key, version=version)
+
+        client = self._get_client(write=False, client=client, key=key)
         try:
             return client.exists(key) == 1
         except _main_exceptions as e:
@@ -912,9 +916,10 @@ class ClientCommands(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> int:
-        client = self._get_client(write=True, client=client)
-
         key = self.make_key(key, version=version)
+
+        client = self._get_client(write=True, client=client, key=key)
+
         encoded_values = [self.encode(value) for value in values]
         return client.sadd(key, *encoded_values)
 
@@ -924,9 +929,10 @@ class ClientCommands(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> int:
-        client = self._get_client(write=False, client=client)
-
         key = self.make_key(key, version=version)
+
+        client = self._get_client(write=False, client=client, key=key)
+
         return client.scard(key)
 
     def sdiff(
@@ -985,9 +991,10 @@ class ClientCommands(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> List[bool]:
-        client = self._get_client(write=False, client=client)
-
         key = self.make_key(key, version=version)
+
+        client = self._get_client(write=False, client=client, key=key)
+
         encoded_members = [self.encode(member) for member in members]
 
         return [bool(value) for value in client.smismember(key, *encoded_members)]
@@ -999,9 +1006,10 @@ class ClientCommands(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> bool:
-        client = self._get_client(write=False, client=client)
-
         key = self.make_key(key, version=version)
+
+        client = self._get_client(write=False, client=client, key=key)
+
         member = self.encode(member)
         return bool(client.sismember(key, member))
 
@@ -1011,9 +1019,10 @@ class ClientCommands(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> Set[Any]:
-        client = self._get_client(write=False, client=client)
-
         key = self.make_key(key, version=version)
+
+        client = self._get_client(write=False, client=client, key=key)
+
         return {self.decode(value) for value in client.smembers(key)}
 
     def smove(
@@ -1024,10 +1033,11 @@ class ClientCommands(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> bool:
-        client = self._get_client(write=True, client=client)
-
         source = self.make_key(source, version=version)
         destination = self.make_key(destination)
+
+        client = self._get_client(write=True, client=client, key=source)
+
         member = self.encode(member)
         return client.smove(source, destination, member)
 
@@ -1038,9 +1048,10 @@ class ClientCommands(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> Set | Any:
-        client = self._get_client(write=True, client=client)
-
         nkey = self.make_key(key, version=version)
+
+        client = self._get_client(write=True, client=client, key=nkey)
+
         result = client.spop(nkey, count)
         return self._decode_iterable_result(result)
 
@@ -1051,9 +1062,10 @@ class ClientCommands(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> List | Any:
-        client = self._get_client(write=False, client=client)
-
         key = self.make_key(key, version=version)
+
+        client = self._get_client(write=False, client=client, key=key)
+
         result = client.srandmember(key, count)
         return self._decode_iterable_result(result, convert_to_set=False)
 
@@ -1064,9 +1076,10 @@ class ClientCommands(Generic[Backend]):
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> int:
-        client = self._get_client(write=True, client=client)
-
         key = self.make_key(key, version=version)
+
+        client = self._get_client(write=True, client=client, key=key)
+
         nmembers = [self.encode(member) for member in members]
         return client.srem(key, *nmembers)
 
@@ -1082,9 +1095,9 @@ class ClientCommands(Generic[Backend]):
             err_msg = "Using match with compression is not supported."
             raise ValueError(err_msg)
 
-        client = self._get_client(write=False, client=client)
-
         key = self.make_key(key, version=version)
+
+        client = self._get_client(write=False, client=client, key=key)
 
         cursor, result = client.sscan(
             key,
@@ -1105,9 +1118,10 @@ class ClientCommands(Generic[Backend]):
             err_msg = "Using match with compression is not supported."
             raise ValueError(err_msg)
 
-        client = self._get_client(write=False, client=client)
-
         key = self.make_key(key, version=version)
+
+        client = self._get_client(write=False, client=client, key=key)
+
         for value in client.sscan_iter(
             key,
             match=cast(PatternT, self.encode(match)) if match else None,
@@ -1170,9 +1184,10 @@ class ClientCommands(Generic[Backend]):
         if timeout is DEFAULT_TIMEOUT:
             timeout = self._backend.default_timeout
 
-        client = self._get_client(write=True, client=client)
-
         key = self.make_key(key, version=version)
+
+        client = self._get_client(write=True, client=client, key=key)
+
         if timeout is None:
             return bool(client.persist(key))
 
