@@ -1,9 +1,10 @@
 import asyncio
 import contextlib
 import datetime
-from datetime import timedelta
 import threading
-from typing import Iterable, List, cast
+from collections.abc import Iterable
+from datetime import timedelta
+from typing import List, cast
 from unittest.mock import patch, AsyncMock
 
 import pytest
