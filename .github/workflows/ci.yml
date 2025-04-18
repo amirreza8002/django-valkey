@@ -48,6 +48,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+
       - name: Cache docker images
         id: custom-cache
         uses: actions/cache@v4
@@ -58,51 +59,40 @@ jobs:
       - name: Use Cache
         run: docker image load -i ./custom-cache/all.tar
 
-#      - name: Cache
-#        id: cached-poetry
-#        uses: actions/cache@v4
-#        with:
-#          path: ./.venv
-#          key: venv-${{ hashFiles('poetry.lock') }}
-
-      - name: Install poetry
-        if: steps.cached-poetry.outputs.cache-hit != 'true'
-        uses: abatilo/actions-poetry@v3
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
 
       - name: install dependencies
-        run: poetry install --no-interaction --no-root  --all-extras --with dev
-
-      - name: config poetry
         run: |
-          poetry config virtualenvs.create true --local
-          poetry config virtualenvs.in-project true --local
+          uv sync --all-extras --dev
 
       - name: Install project
         run: |
-          poetry add django==${{ matrix.django-version }}
-          poetry install --no-interaction --all-extras
+          uv pip install django==${{ matrix.django-version }}
 
       - name: tests
         run: |
-          poetry run invoke devenv
+          uv run invoke devenv
           chmod +x ./util/wait-for-it.sh
           ./util/wait-for-it.sh localhost:6379
           
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite -x
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_herd -x
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_json -x
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_lz4 -x
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_msgpack -x
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_sentinel -x
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_sentinel_opts -x
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_sharding -x
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_zlib -x
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_zstd -x
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_gzip -x
-          poetry run pytest tests/*.py --ds=tests.settings.sqlite_bz2 -x
-          poetry run pytest tests/tests_async/*.py --ds=tests.settings.sqlite_async -x
-          poetry run pytest tests/tests_async/*.py --ds=tests.settings.sqlite_async_herd -x
-#          poetry run pytest tests/*.py --ds=tests.settings.sqlite_usock -x
+          uv run pytest tests/*.py --ds=tests.settings.sqlite -x
+          uv run pytest tests/*.py --ds=tests.settings.sqlite_herd -x
+          uv run pytest tests/*.py --ds=tests.settings.sqlite_json -x
+          uv run pytest tests/*.py --ds=tests.settings.sqlite_lz4 -x
+          uv run pytest tests/*.py --ds=tests.settings.sqlite_msgpack -x
+          uv run pytest tests/*.py --ds=tests.settings.sqlite_sentinel -x
+          uv run pytest tests/*.py --ds=tests.settings.sqlite_sentinel_opts -x
+          uv run pytest tests/*.py --ds=tests.settings.sqlite_sharding -x
+          uv run pytest tests/*.py --ds=tests.settings.sqlite_zlib -x
+          uv run pytest tests/*.py --ds=tests.settings.sqlite_zstd -x
+          uv run pytest tests/*.py --ds=tests.settings.sqlite_gzip -x
+          uv run pytest tests/*.py --ds=tests.settings.sqlite_bz2 -x
+          uv run pytest tests/tests_async/*.py --ds=tests.settings.sqlite_async -x
+          uv run pytest tests/tests_async/*.py --ds=tests.settings.sqlite_async_herd -x
+#          uv run pytest tests/*.py --ds=tests.settings.sqlite_usock -x
 
         env:
           DJANGO: ${{ matrix.django-version }}

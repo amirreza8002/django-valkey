@@ -28,7 +28,7 @@ dump.rdb
 coverage.xml
 cobertura.xml
 
-poetry.lock
+uv.lock
 dist
 htmlcov
 test.sh
@@ -37,3 +37,5 @@ test_*.sh
 docs/build
 
 .cluster
+
+.python-version
