@@ -1,8 +1,9 @@
 import datetime
 import threading
 import time
+from collections.abc import Iterable
 from datetime import timedelta
-from typing import Iterable, List, cast
+from typing import List, cast
 from unittest.mock import patch
 
 import pytest
