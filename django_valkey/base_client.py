@@ -3,12 +3,11 @@ import random
 import re
 import socket
 import time
+from collections.abc import AsyncGenerator, Iterable, Iterator
 from contextlib import suppress
 from typing import (
     Any,
     Dict,
-    Iterable,
-    Iterator,
     List,
     Set,
     Tuple,
@@ -16,7 +15,6 @@ from typing import (
     TYPE_CHECKING,
     Generic,
     TypeVar,
-    AsyncGenerator,
 )
 
 from django.conf import settings
@@ -879,7 +877,7 @@ class ClientCommands(Generic[Backend]):
     ) -> Iterator[str]:
         """
         Same as keys, but uses cursors
-        for make memory efficient keys iteration.
+        to make memory efficient keys iteration.
         """
 
         client = self._get_client(write=False, client=client)
@@ -1841,10 +1839,10 @@ class AsyncClientCommands(Generic[Backend]):
         itersize: int | None = None,
         client: Backend | Any | None = None,
         version: int | None = None,
-    ) -> AsyncGenerator:
+    ) -> AsyncGenerator[str, None]:
         """
         Same as keys, but uses cursors
-        for make memory efficient keys iteration.
+        to make memory efficient keys iteration.
         """
         client = await self._get_client(write=False, client=client)
         pattern = self.make_pattern(search, version=version)

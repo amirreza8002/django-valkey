@@ -1,6 +1,7 @@
 import contextlib
 import copy
-from typing import Iterable, cast
+from collections.abc import Iterable
+from typing import cast
 
 import pytest
 from pytest import LogCaptureFixture

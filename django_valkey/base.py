@@ -1,15 +1,13 @@
 import builtins
-from asyncio import iscoroutinefunction
 import contextlib
 import functools
 import logging
+from asyncio import iscoroutinefunction
+from collections.abc import AsyncGenerator, Callable, Iterator
 from typing import (
     Any,
     TypeVar,
     Generic,
-    Iterator,
-    AsyncGenerator,
-    Callable,
     TYPE_CHECKING,
 )
 
@@ -445,7 +443,7 @@ class AsyncBackendCommands:
     async def pttl(self, *args, **kwargs) -> int:
         return await self.client.pttl(*args, **kwargs)
 
-    async def iter_keys(self, *args, **kwargs) -> AsyncGenerator[Any]:
+    async def iter_keys(self, *args, **kwargs) -> AsyncGenerator[Any, None]:
         async with contextlib.aclosing(self.client.iter_keys(*args, **kwargs)) as it:
             async for key in it:
                 yield key
@@ -495,7 +493,7 @@ class AsyncBackendCommands:
     async def sscan(self, *args, **kwargs) -> builtins.set[Any]:
         return await self.client.sscan(*args, **kwargs)
 
-    async def sscan_iter(self, *args, **kwargs) -> AsyncGenerator[Any]:
+    async def sscan_iter(self, *args, **kwargs) -> AsyncGenerator[Any, None]:
         async with contextlib.aclosing(self.client.sscan_iter(*args, **kwargs)) as it:
             async for key in it:
                 yield key

@@ -1,5 +1,6 @@
 import socket
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from valkey import Valkey
 from valkey.exceptions import ConnectionError, ResponseError, TimeoutError
