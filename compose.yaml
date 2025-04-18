@@ -8,13 +8,18 @@ services:
     image: valkey/valkey:latest
     container_name: valkey-standalone
     ports:
-      - "6379:6379"
+      - 6379:6379
     profiles:
       - standalone
       - sentinel
       - replica
       - all
-    command: ['valkey-server', '--save', '""']
+    command: valkey-server --save ""
+    healthcheck:
+      test: valkey-cli ping
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 
   cluster:
@@ -23,28 +28,41 @@ services:
       context: .
       dockerfile: dockers/Dockerfile.cluster
     ports:
-      - "16379:16379"
-      - "16380:16380"
-      - "16381:16381"
-      - "16382:16382"
-      - "16383:16383"
-      - "16384:16384"
+      - 16379:16379
+      - 16380:16380
+      - 16381:16381
+      - 16382:16382
+      - 16383:16383
+      - 16384:16384
     volumes:
       - "./dockers/cluster.valkey.conf:/valkey.conf:ro"
     profiles:
       - cluster
       - all
 
+    environment:
+      - VALKEY_CLUSTER=yes
+      - NODES=6
+      - REPLICAS=1
+
   sentinel:
     image: valkey/valkey:latest
     container_name: valkey-sentinel
     depends_on:
-      - valkey
+      valkey:
+        condition: service_healthy
+
     entrypoint: "/usr/local/bin/valkey-sentinel /valkey.conf --port 26379"
     ports:
-      - "26379:26379"
+      - 26379:26379
     volumes:
       - "./dockers/sentinel.conf:/valkey.conf"
     profiles:
       - sentinel
       - all
+
+    healthcheck:
+      test: valkey-cli -p 26379 ping
+      interval: 5s
+      timeout: 5s
+      retries: 5
