@@ -4,7 +4,6 @@ import re
 import socket
 import time
 from collections.abc import AsyncGenerator, Iterable, Iterator
-from contextlib import suppress
 from typing import (
     Any,
     Dict,
@@ -28,9 +27,9 @@ from valkey.typing import AbsExpiryT, EncodableT, ExpiryT, KeyT, PatternT
 from django_valkey import pool
 from django_valkey.base import ATTR_DOES_NOT_EXIST
 from django_valkey.compressors.identity import IdentityCompressor
-from django_valkey.exceptions import CompressorError, ConnectionInterrupted
+from django_valkey.exceptions import ConnectionInterrupted
 from django_valkey.serializers.pickle import PickleSerializer
-from django_valkey.util import CacheKey
+from django_valkey.util import CacheKey, decode, encode, make_key, make_pattern
 
 if TYPE_CHECKING:
     from valkey.lock import Lock
@@ -132,28 +131,16 @@ class BaseClient(Generic[Backend]):
         """
         Decode the given value.
         """
-        try:
-            if value.isdigit():
-                value = int(value)
-            else:
-                value = float(value)
-        except (ValueError, TypeError):
-            # Handle little values, chosen to be not compressed
-            with suppress(CompressorError):
-                value = self._compressor.decompress(value)
-            value = self._serializer.loads(value)
-        return value
+        return decode(value, serializer=self._serializer, compressor=self._compressor)
 
     def encode(self, value: EncodableT) -> bytes | int | float:
         """
         Encode the given value.
         """
 
-        if type(value) is not int and type(value) is not float:
-            value = self._serializer.dumps(value)
-            return self._compressor.compress(value)
-
-        return value
+        return encode(
+            value=value, serializer=self._serializer, compressor=self._compressor
+        )
 
     def _decode_iterable_result(
         self, result: Any, convert_to_set: bool = True
@@ -170,32 +157,22 @@ class BaseClient(Generic[Backend]):
         self, key: KeyT, version: int | None = None, prefix: str | None = None
     ) -> KeyT:
         """Return key as a CacheKey instance so it has additional methods"""
-        if isinstance(key, CacheKey):
-            return key
-
-        if prefix is None:
-            prefix = self._backend.key_prefix
-
-        if version is None:
-            version = self._backend.version
-
-        return CacheKey(self._backend.key_func(key, prefix, version))
+        return make_key(
+            key,
+            key_func=self._backend.key_func,
+            version=version or self._backend.version,
+            prefix=prefix or self._backend.key_prefix,
+        )
 
     def make_pattern(
         self, pattern: str, version: int | None = None, prefix: str | None = None
     ) -> KeyT:
-        if isinstance(pattern, CacheKey):
-            return pattern
-
-        if prefix is None:
-            prefix = self._backend.key_prefix
-        prefix = glob_escape(prefix)
-
-        if version is None:
-            version = self._backend.version
-        version_str = glob_escape(str(version))
-
-        return CacheKey(self._backend.key_func(pattern, prefix, version_str))
+        return make_pattern(
+            pattern=pattern,
+            key_func=self._backend.key_func,
+            version=version or self._backend.version,
+            prefix=prefix or self._backend.key_prefix,
+        )
 
 
 class ClientCommands(Generic[Backend]):
