@@ -1076,10 +1076,13 @@ class ClientCommands(Generic[Backend]):
 
         cursor, result = client.sscan(
             key,
+            cursor=cursor,
             match=cast(PatternT, self.encode(match)) if match else None,
             count=count,
         )
-        return {self.decode(value) for value in result}
+        return cursor, self._decode_iterable_result(
+            result, convert_to_set=convert_to_set
+        )
 
     def sscan_iter(
         self: BaseClient,
@@ -2007,10 +2010,13 @@ class AsyncClientCommands(Generic[Backend]):
         key = self.make_key(key, version=version)
         cursor, result = await client.sscan(
             key,
+            cursor=cursor,
             match=cast(PatternT, self.encode(match)) if match else None,
             count=count,
         )
-        return {self.decode(value) for value in result}
+        return cursor, self._decode_iterable_result(
+            result, convert_to_set=convert_to_set
+        )
 
     async def sscan_iter(
         self,

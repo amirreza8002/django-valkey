@@ -1071,14 +1071,15 @@ class TestDjangoValkeyCache:
 
     def test_sscan(self, cache: ClusterValkeyCache):
         cache.sadd("foo", "bar1", "bar2")
-        items = cache.sscan("foo")
+        cursor, items = cache.sscan("foo")
         assert items == {"bar1", "bar2"}
+        assert cursor == 0
 
     def test_sscan_with_match(self, cache: ClusterValkeyCache):
         if cache.client._has_compression_enabled():
             pytest.skip("Compression is enabled, sscan with match is not supported")
         cache.sadd("foo", "bar1", "bar2", "zoo")
-        items = cache.sscan("foo", match="zoo")
+        _, items = cache.sscan("foo", match="zoo")
         assert items == {"zoo"}
 
     def test_sscan_iter(self, cache: ClusterValkeyCache):
