@@ -915,11 +915,14 @@ class ClientCommands(Generic[Backend]):
         *keys: KeyT,
         version: int | None = None,
         client: Backend | Any | None = None,
-    ) -> Set[Any]:
+        convert_to_set: bool = True,
+    ) -> Set[Any] | list[Any]:
         client = self._get_client(write=False, client=client)
 
         nkeys = [self.make_key(key, version=version) for key in keys]
-        return {self.decode(value) for value in client.sdiff(*nkeys)}
+        return self._decode_iterable_result(
+            client.sdiff(*nkeys), convert_to_set=convert_to_set
+        )
 
     def sdiffstore(
         self: BaseClient,
@@ -940,11 +943,14 @@ class ClientCommands(Generic[Backend]):
         *keys: KeyT,
         version: int | None = None,
         client: Backend | Any | None = None,
-    ) -> Set[Any]:
+        convert_to_set: bool = True,
+    ) -> Set[Any] | list[Any]:
         client = self._get_client(write=False, client=client)
 
         nkeys = [self.make_key(key, version=version) for key in keys]
-        return {self.decode(value) for value in client.sinter(*nkeys)}
+        return self._decode_iterable_result(
+            client.sinter(*nkeys), convert_to_set=convert_to_set
+        )
 
     def sinterstore(
         self: BaseClient,
@@ -993,12 +999,15 @@ class ClientCommands(Generic[Backend]):
         key: KeyT,
         version: int | None = None,
         client: Backend | Any | None = None,
-    ) -> Set[Any]:
+        convert_to_set: bool = True,
+    ) -> Set[Any] | list[Any]:
         key = self.make_key(key, version=version)
 
         client = self._get_client(write=False, client=client, key=key)
 
-        return {self.decode(value) for value in client.smembers(key)}
+        return self._decode_iterable_result(
+            client.smembers(key), convert_to_set=convert_to_set
+        )
 
     def smove(
         self: BaseClient,
@@ -1022,13 +1031,14 @@ class ClientCommands(Generic[Backend]):
         count: int | None = None,
         version: int | None = None,
         client: Backend | Any | None = None,
-    ) -> Set | Any:
+        convert_to_set: bool = True,
+    ) -> Set | list | Any:
         nkey = self.make_key(key, version=version)
 
         client = self._get_client(write=True, client=client, key=nkey)
 
         result = client.spop(nkey, count)
-        return self._decode_iterable_result(result)
+        return self._decode_iterable_result(result, convert_to_set=convert_to_set)
 
     def srandmember(
         self: BaseClient,
@@ -1036,13 +1046,14 @@ class ClientCommands(Generic[Backend]):
         count: int | None = None,
         version: int | None = None,
         client: Backend | Any | None = None,
-    ) -> List | Any:
+        convert_to_set: bool = True,
+    ) -> List | Set | Any:
         key = self.make_key(key, version=version)
 
         client = self._get_client(write=False, client=client, key=key)
 
         result = client.srandmember(key, count)
-        return self._decode_iterable_result(result, convert_to_set=False)
+        return self._decode_iterable_result(result, convert_to_set=convert_to_set)
 
     def srem(
         self: BaseClient,
@@ -1065,7 +1076,9 @@ class ClientCommands(Generic[Backend]):
         count: int = 10,
         version: int | None = None,
         client: Backend | Any | None = None,
-    ) -> Set[Any]:
+        cursor: int = 0,
+        convert_to_set: bool = True,
+    ) -> tuple[int, Set[Any] | list[Any]]:
         if self._has_compression_enabled() and match:
             err_msg = "Using match with compression is not supported."
             raise ValueError(err_msg)
@@ -1112,11 +1125,14 @@ class ClientCommands(Generic[Backend]):
         *keys: KeyT,
         version: int | None = None,
         client: Backend | Any | None = None,
-    ) -> Set[Any]:
+        convert_to_set: bool = True,
+    ) -> Set[Any] | list[Any]:
         client = self._get_client(write=False, client=client)
 
         nkeys = [self.make_key(key, version=version) for key in keys]
-        return {self.decode(value) for value in client.sunion(*nkeys)}
+        return self._decode_iterable_result(
+            client.sunion(*nkeys), convert_to_set=convert_to_set
+        )
 
     def sunionstore(
         self: BaseClient,
@@ -1867,11 +1883,16 @@ class AsyncClientCommands(Generic[Backend]):
         return await client.scard(key)
 
     async def sdiff(
-        self, *keys, version: int | None = None, client: Backend | Any | None = None
-    ) -> Set[Any]:
+        self,
+        *keys,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+        convert_to_set: bool = True,
+    ) -> Set[Any] | list[Any]:
         client = await self._get_client(write=False, client=client)
         nkeys = [self.make_key(key, version=version) for key in keys]
-        return {self.decode(value) for value in await client.sdiff(*nkeys)}
+        results = await client.sdiff(*nkeys)
+        return self._decode_iterable_result(results, convert_to_set=convert_to_set)
 
     async def sdiffstore(
         self,
@@ -1887,11 +1908,16 @@ class AsyncClientCommands(Generic[Backend]):
         return await client.sdiffstore(dest, *nkeys)
 
     async def sinter(
-        self, *keys, version: int | None = None, client: Backend | Any | None = None
-    ) -> Set[Any]:
+        self,
+        *keys,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+        convert_to_set: bool = True,
+    ) -> Set[Any] | list[Any]:
         client = await self._get_client(write=False, client=client)
         nkeys = [self.make_key(key, version=version) for key in keys]
-        return {self.decode(value) for value in await client.sinter(*nkeys)}
+        results = await client.sinter(*nkeys)
+        return self._decode_iterable_result(results, convert_to_set=convert_to_set)
 
     async def sinterstore(
         self,
@@ -1934,12 +1960,17 @@ class AsyncClientCommands(Generic[Backend]):
         return bool(await client.sismember(key, member))
 
     async def smembers(
-        self, key, version: int | None = None, client: Backend | Any | None = None
-    ) -> Set[Any]:
+        self,
+        key,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+        convert_to_set: bool = True,
+    ) -> Set[Any] | list[Any]:
         client = await self._get_client(write=False, client=client)
 
         key = self.make_key(key, version=version)
-        return {self.decode(value) for value in await client.smembers(key)}
+        results = await client.smembers(key)
+        return self._decode_iterable_result(results, convert_to_set=convert_to_set)
 
     async def smove(
         self,
@@ -1961,11 +1992,12 @@ class AsyncClientCommands(Generic[Backend]):
         count: int | None = None,
         version: int | None = None,
         client: Backend | Any | None = None,
-    ) -> Set | Any:
+        convert_to_set: bool = True,
+    ) -> Set | list | Any:
         client = await self._get_client(write=True, client=client)
         nkey = self.make_key(key, version=version)
         result = await client.spop(nkey, count)
-        return self._decode_iterable_result(result)
+        return self._decode_iterable_result(result, convert_to_set=convert_to_set)
 
     async def srandmember(
         self,
@@ -1973,11 +2005,12 @@ class AsyncClientCommands(Generic[Backend]):
         count: int | None = None,
         version: int | None = None,
         client: Backend | Any | None = None,
-    ) -> list | Any:
+        convert_to_set: bool = True,
+    ) -> list | Set | Any:
         client = await self._get_client(write=False, client=client)
         key = self.make_key(key, version=version)
         result = await client.srandmember(key, count)
-        return self._decode_iterable_result(result, convert_to_set=False)
+        return self._decode_iterable_result(result, convert_to_set=convert_to_set)
 
     async def srem(
         self,
@@ -1999,7 +2032,9 @@ class AsyncClientCommands(Generic[Backend]):
         count: int = 10,
         version: int | None = None,
         client: Backend | Any | None = None,
-    ) -> Set[Any]:
+        cursor: int = 0,
+        convert_to_set: bool = True,
+    ) -> tuple[int, Set[Any] | list[Any]]:
         # TODO check this is correct
         if self._has_compression_enabled() and match:
             error_message = "Using match with compression is not supported."
@@ -2049,11 +2084,13 @@ class AsyncClientCommands(Generic[Backend]):
         *keys,
         version: int | None = None,
         client: Backend | Any | None = None,
-    ) -> Set[Any]:
+        convert_to_set: bool = True,
+    ) -> Set[Any] | list[Any]:
         client = await self._get_client(write=False, client=client)
 
         nkeys = [self.make_key(key, version=version) for key in keys]
-        return {self.decode(value) for value in await client.sunion(*nkeys)}
+        results = await client.sunion(*nkeys)
+        return self._decode_iterable_result(results, convert_to_set=convert_to_set)
 
     async def sunionstore(
         self,

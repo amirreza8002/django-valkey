@@ -1089,7 +1089,8 @@ class TestDjangoValkeyCache:
 
     def test_srandmember(self, cache: ValkeyCache):
         cache.sadd("foo", "bar1", "bar2")
-        assert cache.srandmember("foo", 1) in [["bar1"], ["bar2"]]
+        assert cache.srandmember("foo", 1, convert_to_set=False) in [["bar1"], ["bar2"]]
+        assert cache.srandmember("foo", 1) in [{"bar1"}, {"bar2"}]
 
     def test_srem(self, cache: ValkeyCache):
         cache.sadd("foo", "bar1", "bar2")
