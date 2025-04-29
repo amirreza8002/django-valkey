@@ -651,7 +651,7 @@ class ClientCommands(Generic[Backend]):
         timeout: float | None = DEFAULT_TIMEOUT,
         version: int | None = None,
         client: Backend | Any | None = None,
-    ) -> None:
+    ) -> list[bool]:
         """a non-atomic bulk method
         Set a bunch of values in the cache at once from a dict of key/value
         pairs. This is much more efficient than calling set() multiple times.
@@ -662,12 +662,17 @@ class ClientCommands(Generic[Backend]):
         client = self._get_client(write=True, client=client)
 
         try:
+            res: list[bool] = []
             pipeline = client.pipeline()
             for key, value in data.items():
-                self.set(key, value, timeout, version=version, client=pipeline)
+                res.append(
+                    self.set(key, value, timeout, version=version, client=pipeline)
+                )
             pipeline.execute()
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
+
+        return res
 
     def mset(
         self: BaseClient,
@@ -675,7 +680,7 @@ class ClientCommands(Generic[Backend]):
         timeout: float | None = None,
         version: int | None = None,
         client: Backend | None = None,
-    ) -> None:
+    ) -> bool:
         """
         an atomic bulk method
         """
@@ -684,7 +689,7 @@ class ClientCommands(Generic[Backend]):
             self.make_key(k, version=version): self.encode(v) for k, v in data.items()
         }
         try:
-            client.mset(data)
+            return client.mset(data)
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 
@@ -1658,16 +1663,23 @@ class AsyncClientCommands(Generic[Backend]):
         timeout: float | int | None = None,
         version: int | None = None,
         client: Backend | Any | None = None,
-    ) -> None:
+    ) -> list[bool]:
         client = await self._get_client(write=True, client=client)
 
         try:
+            res: list[bool] = []
             pipeline = await client.pipeline()
             for key, value in data.items():
-                await self.set(key, value, timeout, version=version, client=pipeline)
+                res.append(
+                    await self.set(
+                        key, value, timeout, version=version, client=pipeline
+                    )
+                )
             await pipeline.execute()
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
+
+        return res
 
     async def mset(
         self,
@@ -1675,7 +1687,7 @@ class AsyncClientCommands(Generic[Backend]):
         timeout: float | None = None,
         version: int | None = None,
         client: Backend | None = None,
-    ) -> None:
+    ) -> bool:
         client = await self._get_client(write=True, client=client)
 
         data = {
@@ -1683,7 +1695,7 @@ class AsyncClientCommands(Generic[Backend]):
         }
 
         try:
-            await client.mset(data)
+            return await client.mset(data)
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 
