@@ -31,7 +31,7 @@ def glob_escape(s: str) -> str:
 
 def make_key(
     key: KeyT, key_func, version: int | None = None, prefix: str | None = None
-) -> KeyT:
+) -> str:
     if isinstance(key, CacheKey):
         return key
 
@@ -40,7 +40,7 @@ def make_key(
 
 def make_pattern(
     pattern: str, key_func, version: int | None = None, prefix: str | None = None
-) -> KeyT:
+) -> str:
     if isinstance(pattern, CacheKey):
         return pattern
 
