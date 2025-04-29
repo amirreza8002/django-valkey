@@ -873,7 +873,7 @@ class ClientCommands(Generic[Backend]):
         search: str,
         version: int | None = None,
         client: Backend | Any | None = None,
-    ) -> List[Any]:
+    ) -> List[str]:
         """
         Execute KEYS command and return matched results.
         Warning: this can return huge number of results, in
