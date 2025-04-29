@@ -44,7 +44,7 @@ class DefaultClusterClient(BaseClient[ValkeyCluster]):
         client=None,
         nx=False,
         atomic=True,
-    ) -> None:
+    ) -> bool | list[bool]:
         """
         Access valkey's mset method.
         it is important to take care of cluster limitations mentioned here: https://valkey-py.readthedocs.io/en/latest/clustering.html#multi-key-commands
@@ -62,15 +62,15 @@ class DefaultClusterClient(BaseClient[ValkeyCluster]):
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 
-    set_many = mset
-
-    def msetnx(self, data: Dict[KeyT, EncodableT], version=None, client=None):
+    def msetnx(self, data: Dict[KeyT, EncodableT], version=None, client=None) -> bool:
         try:
             return self.mset(data, version=version, client=client, nx=True)
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 
-    def mset_nonatomic(self, data: Dict[KeyT, EncodableT], version=None, client=None):
+    def mset_nonatomic(
+        self, data: Dict[KeyT, EncodableT], version=None, client=None
+    ) -> list[bool]:
         try:
             return self.mset(data, version=version, client=client, atomic=False)
         except _main_exceptions as e:
