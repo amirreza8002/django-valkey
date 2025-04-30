@@ -230,6 +230,9 @@ class BackendCommands:
     def iter_keys(self: BaseValkeyCache, *args, **kwargs) -> Iterator[Any]:
         return self.client.iter_keys(*args, **kwargs)
 
+    def scan(self: BaseValkeyCache, *args, **kwargs) -> tuple[int, list[str]]:
+        return self.client.scan(*args, **kwargs)
+
     def close(self: BaseValkeyCache) -> None:
         self.client.close()
 
@@ -447,6 +450,9 @@ class AsyncBackendCommands:
         async with contextlib.aclosing(self.client.iter_keys(*args, **kwargs)) as it:
             async for key in it:
                 yield key
+
+    async def scan(self, *args, **kwargs) -> tuple[int, list[str]]:
+        return await self.client.scan(*args, **kwargs)
 
     async def keys(self, *args, **kwargs) -> list[Any]:
         return await self.client.keys(*args, **kwargs)

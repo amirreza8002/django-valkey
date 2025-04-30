@@ -868,6 +868,23 @@ class ClientCommands(Generic[Backend]):
         for item in client.scan_iter(match=pattern, count=itersize):
             yield self.reverse_key(item.decode())
 
+    def scan(
+        self,
+        cursor: int = 0,
+        match: PatternT | None = None,
+        count: int | None = None,
+        _type: str | None = None,
+        client: Backend | None = None,
+        version: int | None = None,
+    ) -> tuple[int, list[str]]:
+        client = self._get_client(write=False, client=client)
+        pattern = self.make_pattern(match, version=version)
+        cursor, result = client.scan(
+            cursor=cursor, match=pattern, count=count, _type=_type
+        )
+        dresult = [self.reverse_key(res.decode()) for res in result]
+        return cursor, dresult
+
     def keys(
         self: BaseClient,
         search: str,
@@ -1859,6 +1876,23 @@ class AsyncClientCommands(Generic[Backend]):
         ) as values:
             async for item in values:
                 yield self.reverse_key(item.decode())
+
+    async def scan(
+        self,
+        cursor: int = 0,
+        match: PatternT | None = None,
+        count: int | None = None,
+        _type: str | None = None,
+        client: Backend | None = None,
+        version: int | None = None,
+    ) -> tuple[int, list[str]]:
+        client = await self._get_client(write=False, client=client)
+        pattern = self.make_pattern(match, version=version)
+        cursor, result = await client.scan(
+            cursor=cursor, match=pattern, count=count, _type=_type
+        )
+        dresult = [self.reverse_key(res.decode()) for res in result]
+        return cursor, dresult
 
     async def keys(
         self,
