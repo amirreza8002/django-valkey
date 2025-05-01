@@ -955,6 +955,12 @@ class TestAsyncDjangoValkeyCache:
         await cache.asadd("foo2", "bar2", "bar3")
         assert await cache.asinter("foo1", "foo2") == {"bar2"}
 
+    async def test_sintercard(self, cache: AsyncValkeyCache):
+        await cache.sadd("set1", "a", "b", "c")
+        await cache.sadd("set2", "b", "c", "d")
+        assert await cache.sintercard("set1", "set2") == 2
+        assert await cache.sintercard("set1", "set2", limit=1) == 1
+
     async def test_interstore(self, cache: AsyncValkeyCache):
         await cache.asadd("foo1", "bar1", "bar2")
         await cache.asadd("foo2", "bar2", "bar3")
