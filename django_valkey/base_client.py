@@ -1223,6 +1223,60 @@ class ClientCommands(Generic[Backend]):
         timeout = int(timeout * 1000)
         return bool(client.pexpire(key, timeout))
 
+    def hdel(
+        self: BaseClient,
+        name: str,
+        key: KeyT,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> int:
+        """
+        Remove keys from hash name.
+        Returns the number of fields deleted from the hash.
+        """
+        client = self._get_client(write=True, client=client)
+        nkey = self.make_key(key, version=version)
+        return client.hdel(name, nkey)
+
+    def hexists(
+        self: BaseClient,
+        name: str,
+        key: KeyT,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> bool:
+        """
+        Return True if key exists in hash name, else False.
+        """
+        client = self._get_client(write=False, client=client)
+        nkey = self.make_key(key, version=version)
+        return client.hexists(name, nkey)
+
+    def hkeys(
+        self: BaseClient,
+        name: str,
+        client: Backend | Any | None = None,
+    ) -> List[Any]:
+        """
+        Return a list of keys in hash name.
+        """
+        client = self._get_client(write=False, client=client)
+        try:
+            return [self.reverse_key(k.decode()) for k in client.hkeys(name)]
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
+    def hlen(
+        self: BaseClient,
+        name: str,
+        client: Backend | Any | None = None,
+    ) -> int:
+        """
+        Return the number of items in hash name.
+        """
+        client = self._get_client(write=False, client=client)
+        return client.hlen(name)
+
     def hset(
         self: BaseClient,
         name: str,
@@ -1239,60 +1293,6 @@ class ClientCommands(Generic[Backend]):
         nkey = self.make_key(key, version=version)
         nvalue = self.encode(value)
         return client.hset(name, nkey, nvalue)
-
-    def hdel(
-        self: BaseClient,
-        name: str,
-        key: KeyT,
-        version: int | None = None,
-        client: Backend | Any | None = None,
-    ) -> int:
-        """
-        Remove keys from hash name.
-        Returns the number of fields deleted from the hash.
-        """
-        client = self._get_client(write=True, client=client)
-        nkey = self.make_key(key, version=version)
-        return client.hdel(name, nkey)
-
-    def hlen(
-        self: BaseClient,
-        name: str,
-        client: Backend | Any | None = None,
-    ) -> int:
-        """
-        Return the number of items in hash name.
-        """
-        client = self._get_client(write=False, client=client)
-        return client.hlen(name)
-
-    def hkeys(
-        self: BaseClient,
-        name: str,
-        client: Backend | Any | None = None,
-    ) -> List[Any]:
-        """
-        Return a list of keys in hash name.
-        """
-        client = self._get_client(write=False, client=client)
-        try:
-            return [self.reverse_key(k.decode()) for k in client.hkeys(name)]
-        except _main_exceptions as e:
-            raise ConnectionInterrupted(connection=client) from e
-
-    def hexists(
-        self: BaseClient,
-        name: str,
-        key: KeyT,
-        version: int | None = None,
-        client: Backend | Any | None = None,
-    ) -> bool:
-        """
-        Return True if key exists in hash name, else False.
-        """
-        client = self._get_client(write=False, client=client)
-        nkey = self.make_key(key, version=version)
-        return client.hexists(name, nkey)
 
 
 class AsyncClientCommands(Generic[Backend]):
@@ -2215,6 +2215,50 @@ class AsyncClientCommands(Generic[Backend]):
         timeout = int(timeout * 1000)
         return bool(await client.pexpire(key, timeout))
 
+    async def hdel(
+        self,
+        name: str,
+        key,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> int:
+        """
+        Remove keys from hash name.
+        Returns the number of fields deleted from the hash.
+        """
+        client = await self._get_client(write=True, client=client)
+        nkey = self.make_key(key, version=version)
+        return await client.hdel(name, nkey)
+
+    async def hexists(
+        self,
+        name: str,
+        key,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> bool:
+        """
+        Return True if key exists in hash name, else False.
+        """
+        client = await self._get_client(write=False, client=client)
+        nkey = self.make_key(key, version=version)
+        return await client.hexists(name, nkey)
+
+    async def hkeys(self, name: str, client: Backend | Any | None = None) -> list[Any]:
+        client = await self._get_client(write=False, client=client)
+
+        try:
+            return [self.reverse_key(k.decode()) for k in await client.hkeys(name)]
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
+    async def hlen(self, name: str, client: Backend | Any | None = None) -> int:
+        """
+        Return the number of items in hash name.
+        """
+        client = await self._get_client(write=False, client=client)
+        return await client.hlen(name)
+
     async def hset(
         self,
         name: str,
@@ -2233,50 +2277,6 @@ class AsyncClientCommands(Generic[Backend]):
         nvalue = self.encode(value)
 
         return await client.hset(name, nkey, nvalue)
-
-    async def hdel(
-        self,
-        name: str,
-        key,
-        version: int | None = None,
-        client: Backend | Any | None = None,
-    ) -> int:
-        """
-        Remove keys from hash name.
-        Returns the number of fields deleted from the hash.
-        """
-        client = await self._get_client(write=True, client=client)
-        nkey = self.make_key(key, version=version)
-        return await client.hdel(name, nkey)
-
-    async def hlen(self, name: str, client: Backend | Any | None = None) -> int:
-        """
-        Return the number of items in hash name.
-        """
-        client = await self._get_client(write=False, client=client)
-        return await client.hlen(name)
-
-    async def hkeys(self, name: str, client: Backend | Any | None = None) -> list[Any]:
-        client = await self._get_client(write=False, client=client)
-
-        try:
-            return [self.reverse_key(k.decode()) for k in await client.hkeys(name)]
-        except _main_exceptions as e:
-            raise ConnectionInterrupted(connection=client) from e
-
-    async def hexists(
-        self,
-        name: str,
-        key,
-        version: int | None = None,
-        client: Backend | Any | None = None,
-    ) -> bool:
-        """
-        Return True if key exists in hash name, else False.
-        """
-        client = await self._get_client(write=False, client=client)
-        nkey = self.make_key(key, version=version)
-        return await client.hexists(name, nkey)
 
 
 # Herd related code:
