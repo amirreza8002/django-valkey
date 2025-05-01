@@ -286,6 +286,9 @@ class BackendCommands:
     def sinter(self: BaseValkeyCache, *args, **kwargs) -> builtins.set[Any]:
         return self.client.sinter(*args, **kwargs)
 
+    def sintercard(self, *args, **kwargs) -> int:
+        return self.client.sintercard(*args, **kwargs)
+
     def sinterstore(self: BaseValkeyCache, *args, **kwargs) -> int:
         return self.client.sinterstore(*args, **kwargs)
 
@@ -471,6 +474,9 @@ class AsyncBackendCommands:
 
     async def sinter(self, *args, **kwargs) -> builtins.set[Any]:
         return await self.client.sinter(*args, **kwargs)
+
+    async def sintercard(self, *args, **kwargs) -> int:
+        return await self.client.sintercard(*args, **kwargs)
 
     async def sinterstore(self, *args, **kwargs) -> int:
         return await self.client.sinterstore(*args, **kwargs)

@@ -974,6 +974,18 @@ class ClientCommands(Generic[Backend]):
             client.sinter(*nkeys), convert_to_set=convert_to_set
         )
 
+    def sintercard(
+        self,
+        *keys: Iterable[KeyT],
+        limit: int = 0,
+        version: int | None = None,
+        client: Backend | None = None,
+    ) -> int:
+        client = self._get_client(write=False, client=client)
+        numkeys = str(len(keys))
+        nkeys = [self.make_key(key, version=version) for key in keys]
+        return client.sintercard(numkeys=numkeys, keys=nkeys, limit=limit)
+
     def sinterstore(
         self: BaseClient,
         dest: KeyT,
@@ -1964,6 +1976,18 @@ class AsyncClientCommands(Generic[Backend]):
         nkeys = [self.make_key(key, version=version) for key in keys]
         results = await client.sinter(*nkeys)
         return self._decode_iterable_result(results, convert_to_set=convert_to_set)
+
+    async def sintercard(
+        self,
+        *keys: Iterable[KeyT],
+        limit: int = 0,
+        version: int | None = None,
+        client: Backend | None = None,
+    ) -> int:
+        client = await self._get_client(write=False, client=client)
+        numkeys = str(len(keys))
+        nkeys = [self.make_key(key, version=version) for key in keys]
+        return await client.sintercard(numkeys=numkeys, keys=nkeys, limit=limit)
 
     async def sinterstore(
         self,
