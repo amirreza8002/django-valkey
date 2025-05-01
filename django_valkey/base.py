@@ -325,20 +325,20 @@ class BackendCommands:
     def sunionstore(self: BaseValkeyCache, *args, **kwargs) -> int:
         return self.client.sunionstore(*args, **kwargs)
 
-    def hset(self: BaseValkeyCache, *args, **kwargs) -> int:
-        return self.client.hset(*args, **kwargs)
-
     def hdel(self: BaseValkeyCache, *args, **kwargs) -> int:
         return self.client.hdel(*args, **kwargs)
 
-    def hlen(self: BaseValkeyCache, *args, **kwargs) -> int:
-        return self.client.hlen(*args, **kwargs)
+    def hexists(self: BaseValkeyCache, *args, **kwargs) -> bool:
+        return self.client.hexists(*args, **kwargs)
 
     def hkeys(self: BaseValkeyCache, *args, **kwargs) -> list[Any]:
         return self.client.hkeys(*args, **kwargs)
 
-    def hexists(self: BaseValkeyCache, *args, **kwargs) -> bool:
-        return self.client.hexists(*args, **kwargs)
+    def hlen(self: BaseValkeyCache, *args, **kwargs) -> int:
+        return self.client.hlen(*args, **kwargs)
+
+    def hset(self: BaseValkeyCache, *args, **kwargs) -> int:
+        return self.client.hset(*args, **kwargs)
 
 
 @decorate_all_methods(omit_exception)
@@ -516,17 +516,17 @@ class AsyncBackendCommands:
     async def sunionstore(self, *args, **kwargs) -> int:
         return await self.client.sunionstore(*args, **kwargs)
 
-    async def hset(self, *args, **kwargs) -> int:
-        return await self.client.hset(*args, **kwargs)
-
     async def hdel(self, *args, **kwargs) -> int:
         return await self.client.hdel(*args, **kwargs)
 
-    async def hlen(self, *args, **kwargs) -> int:
-        return await self.client.hlen(*args, **kwargs)
+    async def hexists(self, *args, **kwargs) -> bool:
+        return await self.client.hexists(*args, **kwargs)
 
     async def hkeys(self, *args, **kwargs) -> list[Any]:
         return await self.client.hkeys(*args, **kwargs)
 
-    async def hexists(self, *args, **kwargs) -> bool:
-        return await self.client.hexists(*args, **kwargs)
+    async def hlen(self, *args, **kwargs) -> int:
+        return await self.client.hlen(*args, **kwargs)
+
+    async def hset(self, *args, **kwargs) -> int:
+        return await self.client.hset(*args, **kwargs)
