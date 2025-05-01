@@ -859,6 +859,17 @@ class TestDjangoValkeyCache:
         assert cache.hlen("foo_hash1") == 2
         assert cache.hexists("foo_hash1", "foo1")
         assert cache.hexists("foo_hash1", "foo2")
+        assert cache.hget("foo_hash1", "foo1") == "bar1"
+        assert cache.hget("foo_hash1", "foo2") == "bar2"
+
+    def test_hget(self, cache: ClusterValkeyCache):
+        cache.hset("foo_hash1", "foo1", "bar1")
+        cache.hset("foo_hash1", "foo2", 2)
+        cache.hset("foo_hash1", "foo3", 3.1)
+
+        assert cache.hget("foo_hash1", "foo1") == "bar1"
+        assert cache.hget("foo_hash1", "foo2") == 2
+        assert cache.hget("foo_hash1", "foo3") == 3.1
 
     def test_hdel(self, cache: ClusterValkeyCache):
         if isinstance(cache.client, ShardClient):
