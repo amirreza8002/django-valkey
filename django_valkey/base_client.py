@@ -1252,6 +1252,26 @@ class ClientCommands(Generic[Backend]):
         nkey = self.make_key(key, version=version)
         return client.hexists(name, nkey)
 
+    def hget(
+        self: BaseClient,
+        name: str,
+        key: KeyT,
+        default: Any | None = None,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> Any:
+        """
+        Return the value of the hash name at key, or return the default value
+        """
+        client = self._get_client(write=False, client=client)
+        nkey = self.make_key(key, version=version)
+        result = client.hget(name=name, key=nkey)
+        if not result:
+            return default
+
+        value = self.decode(result)
+        return value
+
     def hkeys(
         self: BaseClient,
         name: str,
@@ -2243,6 +2263,26 @@ class AsyncClientCommands(Generic[Backend]):
         client = await self._get_client(write=False, client=client)
         nkey = self.make_key(key, version=version)
         return await client.hexists(name, nkey)
+
+    async def hget(
+        self,
+        name: str,
+        key: KeyT,
+        default: Any | None = None,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> Any:
+        """
+        Return the value of the hash name at key, or return the default value
+        """
+        client = await self._get_client(write=False, client=client)
+        nkey = self.make_key(key, version=version)
+        result = await client.hget(name=name, key=nkey)
+        if not result:
+            return default
+
+        value = self.decode(result)
+        return value
 
     async def hkeys(self, name: str, client: Backend | Any | None = None) -> list[Any]:
         client = await self._get_client(write=False, client=client)
