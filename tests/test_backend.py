@@ -765,6 +765,29 @@ class TestDjangoValkeyCache:
         next_value = next(result)
         assert next_value is not None
 
+    def test_scan(self, cache: ValkeyCache):
+        if isinstance(cache.client, ShardClient):
+            pytest.skip("ShardClient doesn't support scan")
+
+        cache.set("foo1", 1)
+        cache.set("foo2", 1)
+        cache.set("foo3", 1)
+        cursor, res = cache.scan(match="foo*", count=1)
+        assert set(res) == {"foo1", "foo2", "foo3"}
+        assert cursor == 0
+
+    def test_scan_with_count_1_doesnt_return_everything(self, cache: ValkeyCache):
+        if isinstance(cache.client, ShardClient):
+            pytest.skip("ShardClient doesn't support scan")
+
+        for i in range(10):
+            cache.set(f"foo{i}", 1)
+
+        cursor, res = cache.scan(match="foo*", count=1)
+        assert len(res) != 10
+        _, res2 = cache.scan(cursor=cursor, match="foo*")
+        assert len(set(res) ^ set(res2)) == len(res) + len(res2)
+
     def test_primary_replica_switching(self, cache: ValkeyCache):
         if isinstance(cache.client, ShardClient):
             pytest.skip("shard client handles connections differently")
