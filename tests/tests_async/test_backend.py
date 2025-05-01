@@ -772,6 +772,25 @@ class TestAsyncDjangoValkeyCache:
         next_value = anext(result)  # noqa: F821
         assert await next_value is not None
 
+    async def test_scan(self, cache: AsyncValkeyCache):
+        await cache.set("foo1", 1)
+        await cache.set("foo2", 1)
+        await cache.set("foo3", 1)
+        cursor, res = await cache.scan(match="foo*", count=1)
+        assert res == ["foo1", "foo2", "foo3"]
+        assert cursor == 0
+
+    async def test_scan_with_count_1_doesnt_return_everything(
+        self, cache: AsyncValkeyCache
+    ):
+        for i in range(10):
+            await cache.set(f"foo{i}", 1)
+
+        cursor, res = await cache.scan(match="foo*", count=1)
+        assert len(res) != 10
+        _, res2 = await cache.scan(cursor=cursor, match="foo*")
+        assert len(set(res) ^ set(res2)) == len(res) + len(res2)
+
     async def test_primary_replica_switching(self, cache: AsyncValkeyCache):
         cache = cast(AsyncValkeyCache, caches["sample"])
         client = cache.client

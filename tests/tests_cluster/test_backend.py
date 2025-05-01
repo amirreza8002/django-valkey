@@ -755,6 +755,26 @@ class TestDjangoValkeyCache:
         next_value = next(result)
         assert next_value is not None
 
+    def test_scan(self, cache: ClusterValkeyCache):
+        cache.set("foo1", 1)
+        cache.set("foo2", 1)
+        cache.set("foo3", 1)
+        cursor, res = cache.scan(match="foo*", count=1)
+        assert set(res) == {"foo1", "foo2", "foo3"}
+        assert cursor == {"127.0.0.1:7000": 0, "127.0.0.1:7001": 0, "127.0.0.1:7002": 0}
+
+    def test_scan_with_count_1_doesnt_return_everything(
+        self, cache: ClusterValkeyCache
+    ):
+        for i in range(10):
+            cache.set(f"foo{i}", 1)
+
+        cursor: dict
+        cursor, res = cache.scan(match="foo*", count=1)
+        assert len(res) != 10
+        _, res2 = cache.scan(cursor=list(cursor.values())[-1], match="foo*")
+        assert len(set(res) ^ set(res2)) == len(res) + len(res2)
+
     def test_primary_replica_switching(self, cache: ClusterValkeyCache):
         if isinstance(cache.client, ShardClient):
             pytest.skip("ShardClient doesn't support get_client")
