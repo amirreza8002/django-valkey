@@ -867,6 +867,17 @@ class TestAsyncDjangoValkeyCache:
         assert await cache.ahlen("foo_hash1") == 2
         assert await cache.ahexists("foo_hash1", "foo1")
         assert await cache.ahexists("foo_hash1", "foo2")
+        assert await cache.hget("foo_hash1", "foo1") == "bar1"
+        assert await cache.hget("foo_hash1", "foo2") == "bar2"
+
+    async def test_hget(self, cache: AsyncValkeyCache):
+        await cache.hset("foo_hash1", "foo1", "bar1")
+        await cache.hset("foo_hash1", "foo2", 2)
+        await cache.hset("foo_hash1", "foo3", 3.1)
+
+        assert await cache.hget("foo_hash1", "foo1") == "bar1"
+        assert await cache.hget("foo_hash1", "foo2") == 2
+        assert await cache.hget("foo_hash1", "foo3") == 3.1
 
     async def test_hdel(self, cache: AsyncValkeyCache):
         await cache.ahset("foo_hash2", "foo1", "bar1")
