@@ -870,6 +870,24 @@ class TestAsyncDjangoValkeyCache:
         assert await cache.hget("foo_hash1", "foo1") == "bar1"
         assert await cache.hget("foo_hash1", "foo2") == "bar2"
 
+    async def test_hset_mapping(self, cache: AsyncValkeyCache):
+        await cache.hset("foo_hash1", mapping={"foo1": "bar1", "foo2": "bar2"})
+
+        assert await cache.hlen("foo_hash1") == 2
+        assert await cache.hexists("foo_hash1", "foo1")
+        assert await cache.hexists("foo_hash1", "foo2")
+        assert await cache.hget("foo_hash1", "foo1") == "bar1"
+        assert await cache.hget("foo_hash1", "foo2") == "bar2"
+
+    async def test_hset_items(self, cache: AsyncValkeyCache):
+        await cache.hset("foo_hash1", items=["foo1", "bar1", "foo2", "bar2"])
+
+        assert await cache.hlen("foo_hash1") == 2
+        assert await cache.hexists("foo_hash1", "foo1")
+        assert await cache.hexists("foo_hash1", "foo2")
+        assert await cache.hget("foo_hash1", "foo1") == "bar1"
+        assert await cache.hget("foo_hash1", "foo2") == "bar2"
+
     async def test_hget(self, cache: AsyncValkeyCache):
         await cache.hset("foo_hash1", "foo1", "bar1")
         await cache.hset("foo_hash1", "foo2", 2)
