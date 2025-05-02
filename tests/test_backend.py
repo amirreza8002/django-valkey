@@ -999,6 +999,15 @@ class TestDjangoValkeyCache:
         assert cache.hexists("foo_hash5", "foo1")
         assert not cache.hexists("foo_hash5", "foo")
 
+    def test_hvals(self, cache: ValkeyCache):
+        if isinstance(cache.client, ShardClient):
+            pytest.skip("ShardClient doesn't support hash operations")
+
+        cache.hset(
+            "foo_hash6", mapping={"foo1": "bar1", "foo2": "bar2", "foo3": "bar3"}
+        )
+        assert cache.hvals("foo_hash6") == ["bar1", "bar2", "bar3"]
+
     def test_sadd(self, cache: ValkeyCache):
         assert cache.sadd("foo", "bar") == 1
         assert cache.smembers("foo") == {"bar"}

@@ -963,6 +963,12 @@ class TestAsyncDjangoValkeyCache:
         assert await cache.ahexists("foo_hash5", "foo1")
         assert not await cache.ahexists("foo_hash5", "foo")
 
+    async def test_hvals(self, cache: AsyncValkeyCache):
+        await cache.hset(
+            "foo_hash6", mapping={"foo1": "bar1", "foo2": "bar2", "foo3": "bar3"}
+        )
+        assert await cache.hvals("foo_hash6") == ["bar1", "bar2", "bar3"]
+
     async def test_sadd(self, cache: AsyncValkeyCache):
         assert await cache.asadd("foo", "bar") == 1
         assert await cache.asmembers("foo") == {"bar"}
