@@ -874,6 +874,30 @@ class TestDjangoValkeyCache:
         assert cache.hget("foo_hash1", "foo1") == "bar1"
         assert cache.hget("foo_hash1", "foo2") == "bar2"
 
+    def test_hset_mapping(self, cache: ValkeyCache):
+        if isinstance(cache.client, ShardClient):
+            pytest.skip("ShardClient doesn't support hash operations")
+
+        cache.hset("foo_hash1", mapping={"foo1": "bar1", "foo2": "bar2"})
+
+        assert cache.hlen("foo_hash1") == 2
+        assert cache.hexists("foo_hash1", "foo1")
+        assert cache.hexists("foo_hash1", "foo2")
+        assert cache.hget("foo_hash1", "foo1") == "bar1"
+        assert cache.hget("foo_hash1", "foo2") == "bar2"
+
+    def test_hset_items(self, cache: ValkeyCache):
+        if isinstance(cache.client, ShardClient):
+            pytest.skip("ShardClient doesn't support hash operations")
+
+        cache.hset("foo_hash1", items=["foo1", "bar1", "foo2", "bar2"])
+
+        assert cache.hlen("foo_hash1") == 2
+        assert cache.hexists("foo_hash1", "foo1")
+        assert cache.hexists("foo_hash1", "foo2")
+        assert cache.hget("foo_hash1", "foo1") == "bar1"
+        assert cache.hget("foo_hash1", "foo2") == "bar2"
+
     def test_hget(self, cache: ValkeyCache):
         if isinstance(cache.client, ShardClient):
             pytest.skip("ShardClient doesn't support hash operations")
