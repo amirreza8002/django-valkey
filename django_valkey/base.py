@@ -337,6 +337,12 @@ class BackendCommands:
     def hgetall(self: BaseValkeyCache, *args, **kwargs) -> dict[str, Any]:
         return self.client.hgetall(*args, **kwargs)
 
+    def hincrby(self: BaseValkeyCache, *args, **kwargs) -> int:
+        return self.client.hincrby(*args, **kwargs)
+
+    def hincrbyfloat(self: BaseValkeyCache, *args, **kwargs) -> int:
+        return self.client.hincrbyfloat(*args, **kwargs)
+
     def hkeys(self: BaseValkeyCache, *args, **kwargs) -> list[Any]:
         return self.client.hkeys(*args, **kwargs)
 
@@ -533,6 +539,12 @@ class AsyncBackendCommands:
 
     async def hgetall(self, *args, **kwargs) -> dict[str, Any]:
         return await self.client.hgetall(*args, **kwargs)
+
+    async def hincrby(self, *args, **kwargs) -> int:
+        return await self.client.hincrby(*args, **kwargs)
+
+    async def hincrbyfloat(self, *args, **kwargs) -> float:
+        return await self.client.hincrbyfloat(*args, **kwargs)
 
     async def hkeys(self, *args, **kwargs) -> list[Any]:
         return await self.client.hkeys(*args, **kwargs)
