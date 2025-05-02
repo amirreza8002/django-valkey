@@ -918,6 +918,16 @@ class TestDjangoValkeyCache:
         assert cache.hget("foo_hash1", "foo2") == 2
         assert cache.hget("foo_hash1", "foo3") == 3.1
 
+    def test_hmget(self, cache: ValkeyCache):
+        if isinstance(cache.client, ShardClient):
+            pytest.skip("ShardClient doesn't support hash operations")
+
+        cache.hset("foo_hash1", mapping={"foo1": "bar1", "foo2": "bar2"})
+        assert cache.hmget("foo_hash1", "foo1", "foo2") == {
+            "foo1": "bar1",
+            "foo2": "bar2",
+        }
+
     def test_hgetall(self, cache: ValkeyCache):
         if isinstance(cache.client, ShardClient):
             pytest.skip("ShardClient doesn't support hash operations")
