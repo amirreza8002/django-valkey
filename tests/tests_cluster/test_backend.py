@@ -871,6 +871,15 @@ class TestDjangoValkeyCache:
         assert cache.hget("foo_hash1", "foo2") == 2
         assert cache.hget("foo_hash1", "foo3") == 3.1
 
+    def test_hgetall(self, cache: ClusterValkeyCache):
+        cache.hset("foo_hash1", "foo1", "bar1")
+        cache.hset("foo_hash1", "foo2", 2)
+        cache.hset("foo_hash1", "foo3", 3.1)
+        cache.hset("foo_hash1", 4, 4)
+
+        all = cache.hgetall("foo_hash1")
+        assert all == {"foo1": "bar1", "foo2": 2, "foo3": 3.1, "4": 4}
+
     def test_hdel(self, cache: ClusterValkeyCache):
         if isinstance(cache.client, ShardClient):
             pytest.skip("ShardClient doesn't support get_client")
