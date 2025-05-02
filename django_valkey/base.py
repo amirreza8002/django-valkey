@@ -15,6 +15,8 @@ from django.conf import settings
 from django.core.cache.backends.base import get_key_func
 from django.utils.module_loading import import_string
 
+from valkey.typing import EncodableT, KeyT
+
 from django_valkey.exceptions import ConnectionInterrupted
 
 if TYPE_CHECKING:
@@ -355,6 +357,9 @@ class BackendCommands:
     def hsetnx(self: BaseValkeyCache, *args, **kwargs) -> int:
         return self.client.hsetnx(*args, **kwargs)
 
+    def hmget(self: BaseValkeyCache, *args, **kwargs) -> dict[KeyT, EncodableT]:
+        return self.client.hmget(*args, **kwargs)
+
 
 @decorate_all_methods(omit_exception)
 class AsyncBackendCommands:
@@ -560,3 +565,6 @@ class AsyncBackendCommands:
 
     async def hsetnx(self, *args, **kwargs) -> int:
         return await self.client.hsetnx(*args, **kwargs)
+
+    async def hmget(self, *args, **kwargs) -> dict[KeyT, EncodableT]:
+        return await self.client.hmget(*args, **kwargs)

@@ -1,4 +1,5 @@
 import contextlib
+import itertools
 import random
 import re
 import socket
@@ -1403,6 +1404,32 @@ class ClientCommands(Generic[Backend]):
 
         return client.hsetnx(name=name, key=nkey, value=nvalue)
 
+    def hmget(
+        self,
+        name: str,
+        key: KeyT | list[KeyT],
+        *args,
+        version: int | None = None,
+        client: Backend | None = None,
+    ) -> dict[KeyT, EncodableT]:
+        client = self._get_client(write=False, client=client)
+
+        recovered_data = {}
+
+        map_keys = {
+            self.make_key(k, version=version): k
+            for k in itertools.chain(args, [key] if isinstance(key, str) else key)
+        }
+
+        results = client.hmget(name=name, keys=map_keys)
+
+        for key, value in zip(map_keys, results):
+            if value is None:
+                continue
+            recovered_data[map_keys[key]] = self.decode(value)
+
+        return recovered_data
+
 
 class AsyncClientCommands(Generic[Backend]):
     def __getattr__(self, item):
@@ -2495,6 +2522,32 @@ class AsyncClientCommands(Generic[Backend]):
         nvalue = self.encode(value)
 
         return await client.hsetnx(name=name, key=nkey, value=nvalue)
+
+    async def hmget(
+        self,
+        name: str,
+        key: KeyT | list[KeyT],
+        *args,
+        version: int | None = None,
+        client: Backend | None = None,
+    ) -> dict[KeyT, EncodableT]:
+        client = await self._get_client(write=False, client=client)
+
+        recovered_data = {}
+
+        map_keys = {
+            self.make_key(k, version=version): k
+            for k in itertools.chain(args, [key] if isinstance(key, str) else key)
+        }
+
+        results = await client.hmget(name=name, keys=map_keys)
+
+        for key, value in zip(map_keys, results):
+            if value is None:
+                continue
+            recovered_data[map_keys[key]] = self.decode(value)
+
+        return recovered_data
 
 
 # Herd related code:
