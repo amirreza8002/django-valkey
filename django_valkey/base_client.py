@@ -1347,19 +1347,42 @@ class ClientCommands(Generic[Backend]):
     def hset(
         self: BaseClient,
         name: str,
-        key: KeyT,
-        value: EncodableT,
+        key: KeyT | None = None,
+        value: EncodableT | None = None,
+        mapping: dict[KeyT, EncodableT] | None = None,
+        items: list[KeyT, EncodableT] | None = None,
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> int:
         """
         Set the value of hash name at key to value.
+        :param key: a single key for single operation
+        :param value: a single value for a single key
+        :param mapping: a dict, dict keys are hash keys and values are hash value, can do bulk operation
+        :param items: a list, items on even indexes are keys (0, 2, 4...), items at odd indexes are values (1, 3, 4)
         Returns the number of fields added to the hash.
         """
         client = self._get_client(write=True, client=client)
-        nkey = self.make_key(key, version=version)
-        nvalue = self.encode(value)
-        return client.hset(name, nkey, nvalue)
+        nkey = self.make_key(key, version=version) if key and value else None
+        nvalue = self.encode(value) if key and value else None
+        nmapping = (
+            {
+                self.make_key(k, version=version): self.encode(v)
+                for k, v in mapping.items()
+            }
+            if mapping
+            else None
+        )
+        # items in even indexes are keys, items in odd indexes are values
+        nitems = (
+            [
+                self.make_key(v, version=version) if i % 2 == 0 else self.encode(v)
+                for i, v in enumerate(items)
+            ]
+            if items
+            else None
+        )
+        return client.hset(name, key=nkey, value=nvalue, mapping=nmapping, items=nitems)
 
 
 class AsyncClientCommands(Generic[Backend]):
@@ -2392,21 +2415,48 @@ class AsyncClientCommands(Generic[Backend]):
     async def hset(
         self,
         name: str,
-        key,
-        value,
+        key: KeyT | None = None,
+        value: EncodableT | None = None,
+        mapping: dict[KeyT, EncodableT] | None = None,
+        items: list[tuple[KeyT, EncodableT]] | None = None,
         version: int | None = None,
         client: Backend | Any | None = None,
     ) -> int:
         """
-        Sets the value of hash name at key to value.
+        Set the value of hash name at key to value.
+        :param key: a single key for single operation
+        :param value: a single value for a single key
+        :param mapping: a dict, dict keys are hash keys and values are hash value, can do bulk operation
+        :param items: a list, items on even indexes are keys (0, 2, 4...), items at odd indexes are values (1, 3, 4)
         Returns the number of fields added to the hash.
         """
         client = await self._get_client(write=True, client=client)
 
-        nkey = self.make_key(key, version)
-        nvalue = self.encode(value)
+        nkey = self.make_key(key, version=version) if key and value else None
+        nvalue = self.encode(value) if key and value else None
 
-        return await client.hset(name, nkey, nvalue)
+        nmapping = (
+            {
+                self.make_key(k, version=version): self.encode(v)
+                for k, v in mapping.items()
+            }
+            if mapping
+            else None
+        )
+
+        # items in even indexes are keys, items in odd indexes are values
+        nitems = (
+            [
+                self.make_key(v, version=version) if i % 2 == 0 else self.encode(v)
+                for i, v in enumerate(items)
+            ]
+            if items
+            else None
+        )
+
+        return await client.hset(
+            name, key=nkey, value=nvalue, mapping=nmapping, items=nitems
+        )
 
 
 # Herd related code:
