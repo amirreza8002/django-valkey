@@ -1287,6 +1287,38 @@ class ClientCommands(Generic[Backend]):
         }
         return results
 
+    def hincrby(
+        self: BaseClient,
+        name: str,
+        key: KeyT,
+        amount: int = 1,
+        version: int | None = None,
+        client: Backend | None = None,
+    ) -> int:
+        """
+        Increment the value of key in hash
+        returns the new value
+        """
+        client = self._get_client(write=True, client=client)
+        nkey = self.make_key(key, version=version)
+        return client.hincrby(name=name, key=nkey, amount=amount)
+
+    def hincrbyfloat(
+        self: BaseClient,
+        name: str,
+        key: KeyT,
+        amount: float = 1.0,
+        version: int | None = None,
+        client: Backend | None = None,
+    ) -> float:
+        """
+        Increment the value of key in hash
+        returns the new value
+        """
+        client = self._get_client(write=True, client=client)
+        nkey = self.make_key(key, version=version)
+        return client.hincrbyfloat(name=name, key=nkey, amount=amount)
+
     def hkeys(
         self: BaseClient,
         name: str,
@@ -2309,6 +2341,38 @@ class AsyncClientCommands(Generic[Backend]):
             self.reverse_key(k.decode()): self.decode(v) for k, v in raw_results.items()
         }
         return results
+
+    async def hincrby(
+        self,
+        name: str,
+        key: KeyT,
+        amount: int = 1,
+        version: int | None = None,
+        client: Backend | None = None,
+    ) -> int:
+        """
+        Increment the value of key in hash
+        returns the new value
+        """
+        client = await self._get_client(write=True, client=client)
+        nkey = self.make_key(key, version=version)
+        return await client.hincrby(name=name, key=nkey, amount=amount)
+
+    async def hincrbyfloat(
+        self,
+        name: str,
+        key: KeyT,
+        amount: float = 1.0,
+        version: int | None = None,
+        client: Backend | None = None,
+    ) -> float:
+        """
+        Increment the value of key in hash
+        returns the new value
+        """
+        client = await self._get_client(write=True, client=client)
+        nkey = self.make_key(key, version=version)
+        return await client.hincrbyfloat(name=name, key=nkey, amount=amount)
 
     async def hkeys(self, name: str, client: Backend | Any | None = None) -> list[Any]:
         client = await self._get_client(write=False, client=client)
