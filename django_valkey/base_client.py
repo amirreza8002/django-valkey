@@ -1384,6 +1384,25 @@ class ClientCommands(Generic[Backend]):
         )
         return client.hset(name, key=nkey, value=nvalue, mapping=nmapping, items=nitems)
 
+    def hsetnx(
+        self,
+        name: str,
+        key: KeyT,
+        value: EncodableT,
+        version: int | None = None,
+        client: Backend | None = None,
+    ) -> int:
+        """
+        Set the value of hash at key, if key doesn't exist
+        Returns the number of fields added to the hash.
+        """
+        client = self._get_client(write=True, client=client)
+
+        nkey = self.make_key(key, version=version)
+        nvalue = self.encode(value)
+
+        return client.hsetnx(name=name, key=nkey, value=nvalue)
+
 
 class AsyncClientCommands(Generic[Backend]):
     def __getattr__(self, item):
@@ -2457,6 +2476,25 @@ class AsyncClientCommands(Generic[Backend]):
         return await client.hset(
             name, key=nkey, value=nvalue, mapping=nmapping, items=nitems
         )
+
+    async def hsetnx(
+        self,
+        name: str,
+        key: KeyT,
+        value: EncodableT,
+        version: int | None = None,
+        client: Backend | None = None,
+    ) -> int:
+        """
+        Set the value of hash at key, if key doesn't exist
+        Returns the number of fields added to the hash.
+        """
+        client = await self._get_client(write=True, client=client)
+
+        nkey = self.make_key(key, version=version)
+        nvalue = self.encode(value)
+
+        return await client.hsetnx(name=name, key=nkey, value=nvalue)
 
 
 # Herd related code:
