@@ -880,6 +880,11 @@ class TestDjangoValkeyCache:
         assert cache.hget("foo_hash1", "foo1") == "bar1"
         assert cache.hget("foo_hash1", "foo2") == "bar2"
 
+    def test_hsetnx(self, cache: ClusterValkeyCache):
+        assert cache.hsetnx("foo_hash1", "foo1", "bar1") == 1
+        assert not cache.hsetnx("foo_hash1", "foo1", "bar2")
+        assert cache.hget("foo_hash1", "foo1") == "bar1"
+
     def test_hget(self, cache: ClusterValkeyCache):
         cache.hset("foo_hash1", "foo1", "bar1")
         cache.hset("foo_hash1", "foo2", 2)
