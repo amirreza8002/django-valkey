@@ -334,6 +334,9 @@ class BackendCommands:
     def hget(self: BaseValkeyCache, *args, **kwargs) -> Any:
         return self.client.hget(*args, **kwargs)
 
+    def hgetall(self: BaseValkeyCache, *args, **kwargs) -> dict[str, Any]:
+        return self.client.hgetall(*args, **kwargs)
+
     def hkeys(self: BaseValkeyCache, *args, **kwargs) -> list[Any]:
         return self.client.hkeys(*args, **kwargs)
 
@@ -527,6 +530,9 @@ class AsyncBackendCommands:
 
     async def hget(self, *args, **kwargs) -> Any:
         return await self.client.hget(*args, **kwargs)
+
+    async def hgetall(self, *args, **kwargs) -> dict[str, Any]:
+        return await self.client.hgetall(*args, **kwargs)
 
     async def hkeys(self, *args, **kwargs) -> list[Any]:
         return await self.client.hkeys(*args, **kwargs)
