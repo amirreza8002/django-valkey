@@ -1430,6 +1430,16 @@ class ClientCommands(Generic[Backend]):
 
         return recovered_data
 
+    def hvals(self, name: str, client: Backend | None = None) -> list[EncodableT]:
+        """
+        Returns all values in hash.
+        """
+        client = self._get_client(write=False, client=client)
+
+        results = client.hvals(name=name)
+        nresults = [self.decode(value) for value in results]
+        return nresults
+
 
 class AsyncClientCommands(Generic[Backend]):
     def __getattr__(self, item):
@@ -2548,6 +2558,16 @@ class AsyncClientCommands(Generic[Backend]):
             recovered_data[map_keys[key]] = self.decode(value)
 
         return recovered_data
+
+    async def hvals(self, name: str, client: Backend | None = None) -> list[EncodableT]:
+        """
+        Returns all values in hash.
+        """
+        client = await self._get_client(write=False, client=client)
+
+        results = await client.hvals(name=name)
+        nresults = [self.decode(value) for value in results]
+        return nresults
 
 
 # Herd related code:

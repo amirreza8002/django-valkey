@@ -360,6 +360,9 @@ class BackendCommands:
     def hmget(self: BaseValkeyCache, *args, **kwargs) -> dict[KeyT, EncodableT]:
         return self.client.hmget(*args, **kwargs)
 
+    def hvals(self: BaseValkeyCache, *args, **kwargs) -> list[EncodableT]:
+        return self.client.hvals(*args, **kwargs)
+
 
 @decorate_all_methods(omit_exception)
 class AsyncBackendCommands:
@@ -568,3 +571,6 @@ class AsyncBackendCommands:
 
     async def hmget(self, *args, **kwargs) -> dict[KeyT, EncodableT]:
         return await self.client.hmget(*args, **kwargs)
+
+    async def hvals(self, *args, **kwargs) -> list[EncodableT]:
+        return await self.client.hvals(*args, **kwargs)
