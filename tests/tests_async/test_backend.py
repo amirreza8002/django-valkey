@@ -888,6 +888,11 @@ class TestAsyncDjangoValkeyCache:
         assert await cache.hget("foo_hash1", "foo1") == "bar1"
         assert await cache.hget("foo_hash1", "foo2") == "bar2"
 
+    async def test_hsetnx(self, cache: AsyncValkeyCache):
+        assert await cache.hsetnx("foo_hash1", "foo1", "bar1") == 1
+        assert not await cache.hsetnx("foo_hash1", "foo1", "bar2")
+        assert await cache.hget("foo_hash1", "foo1") == "bar1"
+
     async def test_hget(self, cache: AsyncValkeyCache):
         await cache.hset("foo_hash1", "foo1", "bar1")
         await cache.hset("foo_hash1", "foo2", 2)
