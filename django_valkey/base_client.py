@@ -1272,6 +1272,21 @@ class ClientCommands(Generic[Backend]):
         value = self.decode(result)
         return value
 
+    def hgetall(
+        self: BaseClient,
+        name: str,
+        client: Backend | None = None,
+    ) -> dict[str, Any]:
+        """
+        Return all key and values in the hash
+        """
+        client = self._get_client(write=False, client=client)
+        raw_results = client.hgetall(name=name)
+        results = {
+            self.reverse_key(k.decode()): self.decode(v) for k, v in raw_results.items()
+        }
+        return results
+
     def hkeys(
         self: BaseClient,
         name: str,
@@ -2283,6 +2298,17 @@ class AsyncClientCommands(Generic[Backend]):
 
         value = self.decode(result)
         return value
+
+    async def hgetall(self, name: str, client: Backend | None = None) -> dict[str, Any]:
+        """
+        Return all key and values in the hash
+        """
+        client = await self._get_client(write=False, client=client)
+        raw_results = await client.hgetall(name=name)
+        results = {
+            self.reverse_key(k.decode()): self.decode(v) for k, v in raw_results.items()
+        }
+        return results
 
     async def hkeys(self, name: str, client: Backend | Any | None = None) -> list[Any]:
         client = await self._get_client(write=False, client=client)
