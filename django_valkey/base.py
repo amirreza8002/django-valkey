@@ -352,6 +352,9 @@ class BackendCommands:
     def hset(self: BaseValkeyCache, *args, **kwargs) -> int:
         return self.client.hset(*args, **kwargs)
 
+    def hsetnx(self: BaseValkeyCache, *args, **kwargs) -> int:
+        return self.client.hsetnx(*args, **kwargs)
+
 
 @decorate_all_methods(omit_exception)
 class AsyncBackendCommands:
@@ -554,3 +557,6 @@ class AsyncBackendCommands:
 
     async def hset(self, *args, **kwargs) -> int:
         return await self.client.hset(*args, **kwargs)
+
+    async def hsetnx(self, *args, **kwargs) -> int:
+        return await self.client.hsetnx(*args, **kwargs)
