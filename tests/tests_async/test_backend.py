@@ -14,9 +14,10 @@ from pytest_django.fixtures import SettingsWrapper
 from pytest_mock import MockerFixture
 
 from django.core.cache import caches
-from django.core.cache.backends.base import DEFAULT_TIMEOUT
+from django.core.cache.backends.base import DEFAULT_TIMEOUT, get_key_func
 from django.test import override_settings
 
+from django_valkey import util
 from django_valkey.async_cache.cache import AsyncValkeyCache
 from django_valkey.async_cache.client import AsyncHerdClient
 from django_valkey.serializers.json import JSONSerializer
@@ -968,6 +969,20 @@ class TestAsyncDjangoValkeyCache:
             "foo_hash6", mapping={"foo1": "bar1", "foo2": "bar2", "foo3": "bar3"}
         )
         assert await cache.hvals("foo_hash6") == ["bar1", "bar2", "bar3"]
+
+    async def test_hstrlen(self, cache: AsyncValkeyCache):
+        key1 = util.make_key("foo1", get_key_func(None))
+        key2 = util.make_key("foo2", get_key_func(None))
+        valkey = await cache.client.get_client(write=False)
+
+        await cache.hset("foo_hash7", key1, "some value")
+        await cache.hset("foo_hash7", key2, "some other value")
+        assert await cache.hstrlen("foo_hash7", key1) == await valkey.hstrlen(
+            "foo_hash7", key1
+        )
+        assert await cache.hstrlen("foo_hash7", key2) == await valkey.hstrlen(
+            "foo_hash7", key2
+        )
 
     async def test_sadd(self, cache: AsyncValkeyCache):
         assert await cache.asadd("foo", "bar") == 1
