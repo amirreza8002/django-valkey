@@ -363,6 +363,9 @@ class BackendCommands:
     def hvals(self: BaseValkeyCache, *args, **kwargs) -> list[EncodableT]:
         return self.client.hvals(*args, **kwargs)
 
+    def hstrlen(self: BaseValkeyCache, *args, **kwargs) -> int:
+        return self.client.hstrlen(*args, **kwargs)
+
 
 @decorate_all_methods(omit_exception)
 class AsyncBackendCommands:
@@ -574,3 +577,6 @@ class AsyncBackendCommands:
 
     async def hvals(self, *args, **kwargs) -> list[EncodableT]:
         return await self.client.hvals(*args, **kwargs)
+
+    async def hstrlen(self: BaseValkeyCache, *args, **kwargs) -> int:
+        return await self.client.hstrlen(*args, **kwargs)
