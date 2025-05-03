@@ -244,6 +244,23 @@ class ClientCommands(Generic[Backend]):
         if client is not None:
             self.connection_factory.disconnect(client)
 
+    def close(self) -> None:
+        close_flag = self._options.get(
+            "CLOSE_CONNECTION",
+            getattr(settings, "DJANGO_VALKEY_CLOSE_CONNECTION", False),
+        )
+        if close_flag:
+            self._close()
+
+    def _close(self) -> None:
+        """
+        default implementation: Override in custom client
+        """
+        num_clients = len(self._clients)
+        for idx in range(num_clients):
+            self.disconnect(index=idx)
+        self._clients = [None] * num_clients
+
     def set(
         self: BaseClient,
         key: KeyT,
@@ -937,6 +954,39 @@ class ClientCommands(Generic[Backend]):
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 
+    def touch(
+        self: BaseClient,
+        key: KeyT,
+        timeout: float | None = DEFAULT_TIMEOUT,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> bool:
+        """
+        Sets a new expiration for a key.
+        """
+
+        if timeout is DEFAULT_TIMEOUT:
+            timeout = self._backend.default_timeout
+
+        key = self.make_key(key, version=version)
+
+        client = self._get_client(write=True, client=client, key=key)
+
+        if timeout is None:
+            try:
+                return bool(client.persist(key))
+
+            except _main_exceptions as e:
+                raise ConnectionInterrupted(connection=client) from e
+
+        # Convert to milliseconds
+        timeout = int(timeout * 1000)
+        try:
+            return bool(client.pexpire(key, timeout))
+
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
     def sadd(
         self: BaseClient,
         key: KeyT,
@@ -1274,56 +1324,6 @@ class ClientCommands(Generic[Backend]):
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 
-    def close(self) -> None:
-        close_flag = self._options.get(
-            "CLOSE_CONNECTION",
-            getattr(settings, "DJANGO_VALKEY_CLOSE_CONNECTION", False),
-        )
-        if close_flag:
-            self._close()
-
-    def _close(self) -> None:
-        """
-        default implementation: Override in custom client
-        """
-        num_clients = len(self._clients)
-        for idx in range(num_clients):
-            self.disconnect(index=idx)
-        self._clients = [None] * num_clients
-
-    def touch(
-        self: BaseClient,
-        key: KeyT,
-        timeout: float | None = DEFAULT_TIMEOUT,
-        version: int | None = None,
-        client: Backend | Any | None = None,
-    ) -> bool:
-        """
-        Sets a new expiration for a key.
-        """
-
-        if timeout is DEFAULT_TIMEOUT:
-            timeout = self._backend.default_timeout
-
-        key = self.make_key(key, version=version)
-
-        client = self._get_client(write=True, client=client, key=key)
-
-        if timeout is None:
-            try:
-                return bool(client.persist(key))
-
-            except _main_exceptions as e:
-                raise ConnectionInterrupted(connection=client) from e
-
-        # Convert to milliseconds
-        timeout = int(timeout * 1000)
-        try:
-            return bool(client.pexpire(key, timeout))
-
-        except _main_exceptions as e:
-            raise ConnectionInterrupted(connection=client) from e
-
     def hdel(
         self: BaseClient,
         name: str,
@@ -1652,6 +1652,24 @@ class AsyncClientCommands(Generic[Backend]):
 
         if client is not None:
             await self.connection_factory.disconnect(client)
+
+    async def close(self) -> None:
+        close_flag = self._options.get(
+            "CLOSE_CONNECTION",
+            getattr(settings, "DJANGO_VALKEY_CLOSE_CONNECTION", False),
+        )
+        if close_flag:
+            await self._close()
+
+    async def _close(self) -> None:
+        """
+        default implementation: Override in custom client
+        """
+        num_clients = len(self._clients)
+        for index in range(num_clients):
+            # TODO: check disconnect and close
+            await self.disconnect(index=index)
+        self._clients = [None] * num_clients
 
     async def set(
         self,
@@ -2269,6 +2287,35 @@ class AsyncClientCommands(Generic[Backend]):
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 
+    async def touch(
+        self,
+        key,
+        timeout: float | int | None = DEFAULT_TIMEOUT,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> bool:
+        """
+        Sets a new expiration for a key.
+        """
+        if timeout is DEFAULT_TIMEOUT:
+            timeout = self._backend.default_timeout
+
+        client = await self._get_client(write=True, client=client)
+
+        key = self.make_key(key, version=version)
+        if timeout is None:
+            try:
+                return bool(await client.persist(key))
+            except _main_exceptions as e:
+                raise ConnectionInterrupted(connection=client) from e
+
+        # convert timeout to milliseconds
+        timeout = int(timeout * 1000)
+        try:
+            return bool(await client.pexpire(key, timeout))
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
+
     async def sadd(
         self,
         key,
@@ -2587,53 +2634,6 @@ class AsyncClientCommands(Generic[Backend]):
         try:
             return await client.sunionstore(destination, *encoded_keys)
 
-        except _main_exceptions as e:
-            raise ConnectionInterrupted(connection=client) from e
-
-    async def close(self) -> None:
-        close_flag = self._options.get(
-            "CLOSE_CONNECTION",
-            getattr(settings, "DJANGO_VALKEY_CLOSE_CONNECTION", False),
-        )
-        if close_flag:
-            await self._close()
-
-    async def _close(self) -> None:
-        """
-        default implementation: Override in custom client
-        """
-        num_clients = len(self._clients)
-        for index in range(num_clients):
-            # TODO: check disconnect and close
-            await self.disconnect(index=index)
-        self._clients = [None] * num_clients
-
-    async def touch(
-        self,
-        key,
-        timeout: float | int | None = DEFAULT_TIMEOUT,
-        version: int | None = None,
-        client: Backend | Any | None = None,
-    ) -> bool:
-        """
-        Sets a new expiration for a key.
-        """
-        if timeout is DEFAULT_TIMEOUT:
-            timeout = self._backend.default_timeout
-
-        client = await self._get_client(write=True, client=client)
-
-        key = self.make_key(key, version=version)
-        if timeout is None:
-            try:
-                return bool(await client.persist(key))
-            except _main_exceptions as e:
-                raise ConnectionInterrupted(connection=client) from e
-
-        # convert timeout to milliseconds
-        timeout = int(timeout * 1000)
-        try:
-            return bool(await client.pexpire(key, timeout))
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 
