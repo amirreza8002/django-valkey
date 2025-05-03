@@ -1440,6 +1440,18 @@ class ClientCommands(Generic[Backend]):
         nresults = [self.decode(value) for value in results]
         return nresults
 
+    def hstrlen(
+        self: BaseClient,
+        name: str,
+        key: KeyT,
+        version: int | None = None,
+        client: Backend | None = None,
+    ) -> int:
+        client = self._get_client(write=False, client=client)
+
+        nkey = self.make_key(key, version=version)
+        return client.hstrlen(name=name, key=nkey)
+
 
 class AsyncClientCommands(Generic[Backend]):
     def __getattr__(self, item):
@@ -2568,6 +2580,18 @@ class AsyncClientCommands(Generic[Backend]):
         results = await client.hvals(name=name)
         nresults = [self.decode(value) for value in results]
         return nresults
+
+    async def hstrlen(
+        self,
+        name: str,
+        key: KeyT,
+        version: int | None = None,
+        client: Backend | None = None,
+    ) -> int:
+        client = await self._get_client(write=False, client=client)
+
+        nkey = self.make_key(key, version=version)
+        return await client.hstrlen(name=name, key=nkey)
 
 
 # Herd related code:
