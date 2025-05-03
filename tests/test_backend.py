@@ -8,11 +8,12 @@ from unittest.mock import patch
 
 import pytest
 from django.core.cache import caches
-from django.core.cache.backends.base import DEFAULT_TIMEOUT
+from django.core.cache.backends.base import DEFAULT_TIMEOUT, get_key_func
 from django.test import override_settings
 from pytest_django.fixtures import SettingsWrapper
 from pytest_mock import MockerFixture
 
+from django_valkey import util
 from django_valkey.cache import ValkeyCache
 from django_valkey.client import ShardClient, herd
 from django_valkey.serializers.json import JSONSerializer
@@ -1007,6 +1008,19 @@ class TestDjangoValkeyCache:
             "foo_hash6", mapping={"foo1": "bar1", "foo2": "bar2", "foo3": "bar3"}
         )
         assert cache.hvals("foo_hash6") == ["bar1", "bar2", "bar3"]
+
+    def test_hstrlen(self, cache: ValkeyCache):
+        if isinstance(cache.client, ShardClient):
+            pytest.skip("ShardClient doesn't support hash operations")
+
+        key1 = util.make_key("foo1", get_key_func(None))
+        key2 = util.make_key("foo2", get_key_func(None))
+        valkey = cache.client.get_client(write=False)
+
+        cache.hset("foo_hash7", key1, "some value")
+        cache.hset("foo_hash7", key2, "some other value")
+        assert cache.hstrlen("foo_hash7", key1) == valkey.hstrlen("foo_hash7", key1)
+        assert cache.hstrlen("foo_hash7", key2) == valkey.hstrlen("foo_hash7", key2)
 
     def test_sadd(self, cache: ValkeyCache):
         assert cache.sadd("foo", "bar") == 1
