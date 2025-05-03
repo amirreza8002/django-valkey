@@ -1386,7 +1386,7 @@ class ClientCommands(Generic[Backend]):
         return client.hset(name, key=nkey, value=nvalue, mapping=nmapping, items=nitems)
 
     def hsetnx(
-        self,
+        self: BaseClient,
         name: str,
         key: KeyT,
         value: EncodableT,
@@ -1405,7 +1405,7 @@ class ClientCommands(Generic[Backend]):
         return client.hsetnx(name=name, key=nkey, value=nvalue)
 
     def hmget(
-        self,
+        self: BaseClient,
         name: str,
         key: KeyT | list[KeyT],
         *args,
@@ -1430,7 +1430,9 @@ class ClientCommands(Generic[Backend]):
 
         return recovered_data
 
-    def hvals(self, name: str, client: Backend | None = None) -> list[EncodableT]:
+    def hvals(
+        self: BaseClient, name: str, client: Backend | None = None
+    ) -> list[EncodableT]:
         """
         Returns all values in hash.
         """
