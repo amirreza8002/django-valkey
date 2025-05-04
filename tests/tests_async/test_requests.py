@@ -20,8 +20,13 @@ class TestWithOldSignal:
         with pytest.warns(
             RuntimeWarning,
             match="coroutine 'AsyncBackendCommands.close' was never awaited",
-        ):
+        ) as record:
             await async_client.get("/async/")
+
+        assert (
+            str(record[0].message)
+            == "coroutine 'AsyncBackendCommands.close' was never awaited"
+        )
 
 
 @pytest.mark.asyncio(loop_scope="session")
