@@ -21,6 +21,9 @@ async def ignore_exceptions_cache(settings: SettingsWrapper) -> AsyncValkeyCache
     caches_settings = copy.deepcopy(settings.CACHES)
     caches_settings["doesnotexist"]["OPTIONS"]["IGNORE_EXCEPTIONS"] = True
     caches_settings["doesnotexist"]["OPTIONS"]["LOG_IGNORE_EXCEPTIONS"] = True
+    # NOTE: this files raises RuntimeWarning because `conn.close` was not awaited,
+    # this is expected because django calls the signal manually during this test
+    # to debug, put a `raise` in django.utils.connection.BaseConnectionHandler.close_all
     settings.CACHES = caches_settings
     settings.DJANGO_VALKEY_IGNORE_EXCEPTIONS = True
     settings.DJANGO_VALKEY_LOG_IGNORE_EXCEPTIONS = True
