@@ -6,6 +6,3 @@ from django_valkey.client import DefaultClient
 
 class ValkeyCache(BaseValkeyCache[DefaultClient, Valkey], BackendCommands):
     DEFAULT_CLIENT_CLASS = "django_valkey.client.DefaultClient"
-
-    def __contains__(self, item):
-        return self.has_key(item)
