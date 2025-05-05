@@ -160,6 +160,9 @@ class BaseValkeyCache(Generic[Client, Backend]):
 
 @decorate_all_methods(omit_exception)
 class BackendCommands:
+    def __contains__(self, item):
+        return self.has_key(item)
+
     def set(self: BaseValkeyCache, *args, **kwargs) -> bool:
         return self.client.set(*args, **kwargs)
 
