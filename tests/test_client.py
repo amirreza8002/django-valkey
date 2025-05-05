@@ -2,9 +2,10 @@ from collections.abc import Iterable
 from unittest.mock import Mock, call, patch
 
 import pytest
-from django.core.cache import DEFAULT_CACHE_ALIAS
 from pytest_django.fixtures import SettingsWrapper
 from pytest_mock import MockerFixture
+
+from django.core.cache import DEFAULT_CACHE_ALIAS, cache as default_cache
 
 from django_valkey.cache import ValkeyCache
 from django_valkey.client import DefaultClient, ShardClient
@@ -58,9 +59,12 @@ class TestClientClose:
         assert mock.called
 
 
+@pytest.mark.skipif(
+    not isinstance(default_cache.client, DefaultClient), reason="shard only test"
+)
 class TestDefaultClient:
-    @patch("tests.test_client.DefaultClient.get_client")
-    @patch("tests.test_client.DefaultClient.__init__", return_value=None)
+    @patch("django_valkey.base_client.ClientCommands.get_client")
+    @patch("django_valkey.base_client.BaseClient.__init__", return_value=None)
     def test_delete_pattern_calls_get_client_given_no_client(
         self, init_mock, get_client_mock
     ):
@@ -71,9 +75,9 @@ class TestDefaultClient:
         client.delete_pattern(pattern="foo*")
         get_client_mock.assert_called_once_with(write=True, tried=None)
 
-    @patch("tests.test_client.DefaultClient.make_pattern")
-    @patch("tests.test_client.DefaultClient.get_client", return_value=Mock())
-    @patch("tests.test_client.DefaultClient.__init__", return_value=None)
+    @patch("django_valkey.base_client.BaseClient.make_pattern")
+    @patch("django_valkey.base_client.ClientCommands.get_client", return_value=Mock())
+    @patch("django_valkey.base_client.BaseClient.__init__", return_value=None)
     def test_delete_pattern_calls_make_pattern(
         self, init_mock, get_client_mock, make_pattern_mock
     ):
@@ -87,9 +91,9 @@ class TestDefaultClient:
         kwargs = {"version": None, "prefix": None}
         make_pattern_mock.assert_called_once_with("foo*", **kwargs)
 
-    @patch("tests.test_client.DefaultClient.make_pattern")
-    @patch("tests.test_client.DefaultClient.get_client", return_value=Mock())
-    @patch("tests.test_client.DefaultClient.__init__", return_value=None)
+    @patch("django_valkey.base_client.BaseClient.make_pattern")
+    @patch("django_valkey.base_client.ClientCommands.get_client", return_value=Mock())
+    @patch("django_valkey.base_client.BaseClient.__init__", return_value=None)
     def test_delete_pattern_calls_scan_iter_with_count_if_itersize_given(
         self, init_mock, get_client_mock, make_pattern_mock
     ):
@@ -104,9 +108,9 @@ class TestDefaultClient:
             count=90210, match=make_pattern_mock.return_value
         )
 
-    @patch("tests.test_client.DefaultClient.make_pattern")
-    @patch("tests.test_client.DefaultClient.get_client", return_value=Mock())
-    @patch("tests.test_client.DefaultClient.__init__", return_value=None)
+    @patch("django_valkey.base_client.BaseClient.make_pattern")
+    @patch("django_valkey.base_client.ClientCommands.get_client", return_value=Mock())
+    @patch("django_valkey.base_client.BaseClient.__init__", return_value=None)
     def test_delete_pattern_calls_pipeline_delete_and_execute(
         self, init_mock, get_client_mock, make_pattern_mock
     ):
@@ -127,6 +131,9 @@ class TestDefaultClient:
         get_client_mock.return_value.pipeline.return_value.execute.assert_called_once()
 
 
+@pytest.mark.skipif(
+    not isinstance(default_cache.client, ShardClient), reason="shard only test"
+)
 class TestShardClient:
     CLIENT_METHODS_FOR_MOCK = {
         "add",
@@ -166,8 +173,8 @@ class TestShardClient:
 
         yield connection
 
-    @patch("tests.test_client.ShardClient.make_pattern")
-    @patch("tests.test_client.ShardClient.__init__", return_value=None)
+    @patch("django_valkey.base_client.BaseClient.make_pattern")
+    @patch("django_valkey.client.sharded.ShardClient.__init__", return_value=None)
     def test_delete_pattern_calls_scan_iter_with_count_if_itersize_given(
         self,
         init_mock,

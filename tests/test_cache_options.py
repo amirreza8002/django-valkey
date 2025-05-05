@@ -3,13 +3,16 @@ from collections.abc import Iterable
 from typing import cast
 
 import pytest
-from django.core.cache import caches
 from pytest import LogCaptureFixture
 from pytest_django.fixtures import SettingsWrapper
+
+from django.core.cache import caches, cache as default_cache
+
 from valkey.exceptions import ConnectionError
 
 from django_valkey.cache import ValkeyCache
 from django_valkey.client import ShardClient
+from django_valkey.cluster_cache.client import DefaultClusterClient
 
 
 def make_key(key: str, prefix: str, version: str) -> str:
@@ -31,6 +34,10 @@ def ignore_exceptions_cache(settings: SettingsWrapper) -> ValkeyCache:
     return cast(ValkeyCache, caches["doesnotexist"])
 
 
+@pytest.mark.skipif(
+    isinstance(default_cache.client, DefaultClusterClient),
+    reason="cluster client doesn't support ignore exception",
+)
 def test_get_django_omit_exceptions_many_returns_default_arg(
     ignore_exceptions_cache: ValkeyCache,
 ):
@@ -38,6 +45,10 @@ def test_get_django_omit_exceptions_many_returns_default_arg(
     assert ignore_exceptions_cache.get_many(["key1", "key2", "key3"]) == {}
 
 
+@pytest.mark.skipif(
+    isinstance(default_cache.client, DefaultClusterClient),
+    reason="cluster client doesn't support ignore exception",
+)
 def test_get_django_omit_exceptions(
     caplog: LogCaptureFixture, ignore_exceptions_cache: ValkeyCache
 ):
@@ -55,6 +66,10 @@ def test_get_django_omit_exceptions(
     )
 
 
+@pytest.mark.skipif(
+    isinstance(default_cache.client, DefaultClusterClient),
+    reason="cluster client doesn't support ignore exception",
+)
 def test_get_django_omit_exceptions_priority_1(settings: SettingsWrapper):
     caches_setting = copy.deepcopy(settings.CACHES)
     caches_setting["doesnotexist"]["OPTIONS"]["IGNORE_EXCEPTIONS"] = True
@@ -65,6 +80,10 @@ def test_get_django_omit_exceptions_priority_1(settings: SettingsWrapper):
     assert cache.get("key") is None
 
 
+@pytest.mark.skipif(
+    isinstance(default_cache.client, DefaultClusterClient),
+    reason="cluster client doesn't support ignore exception",
+)
 def test_get_django_omit_exceptions_priority_2(settings: SettingsWrapper):
     caches_setting = copy.deepcopy(settings.CACHES)
     caches_setting["doesnotexist"]["OPTIONS"]["IGNORE_EXCEPTIONS"] = False
@@ -113,6 +132,10 @@ class TestDjangoValkeyCacheEscapePrefix:
         with_prefix_cache.set("b", "2")
         assert list(key_prefix_cache.iter_keys("*")) == ["a"]
 
+    @pytest.mark.skipif(
+        isinstance(default_cache.client, DefaultClusterClient),
+        reason="cluster client doesn't support ignore exception",
+    )
     def test_keys(self, key_prefix_cache: ValkeyCache, with_prefix_cache: ValkeyCache):
         key_prefix_cache.set("a", "1")
         with_prefix_cache.set("b", "2")
@@ -121,6 +144,10 @@ class TestDjangoValkeyCacheEscapePrefix:
         assert "b" not in keys
 
 
+@pytest.mark.skipif(
+    isinstance(default_cache.client, DefaultClusterClient),
+    reason="cluster client doesn't support ignore exception",
+)
 def test_custom_key_function(cache: ValkeyCache, settings: SettingsWrapper):
     caches_setting = copy.deepcopy(settings.CACHES)
     caches_setting["default"]["KEY_FUNCTION"] = "tests.test_cache_options.make_key"
