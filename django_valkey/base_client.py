@@ -940,8 +940,15 @@ class ClientCommands(Generic[Backend]):
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 
-        dresult = [self.reverse_key(res.decode()) for res in result]
-        return cursor, dresult
+        uses_key = {"string", "zset", "list", "set"}
+
+        if not _type or _type.lower() in uses_key:
+            result = [self.reverse_key(res.decode()) for res in result]
+        else:
+            # in types like hash and stream, scan returns the names, not the keys,
+            # so `reverse_key` shouldn't be used
+            result = [res.decode() for res in result]
+        return cursor, result
 
     def keys(
         self: BaseClient,
@@ -2281,8 +2288,17 @@ class AsyncClientCommands(Generic[Backend]):
 
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
-        dresult = [self.reverse_key(res.decode()) for res in result]
-        return cursor, dresult
+
+        uses_key = {"string", "zset", "list", "set"}
+
+        if not _type or _type.lower() in uses_key:
+            result = [self.reverse_key(res.decode()) for res in result]
+        else:
+            # in types like hash and stream, scan returns the names, not the keys,
+            # so `reverse_key` shouldn't be used
+            result = [res.decode() for res in result]
+
+        return cursor, result
 
     async def keys(
         self,
