@@ -3,10 +3,9 @@ from collections import OrderedDict
 from typing import Any, List, Dict
 
 from valkey import Valkey
-from valkey.exceptions import ConnectionError
 from valkey.typing import EncodableT, KeyT
 
-from django_valkey.base_client import DEFAULT_TIMEOUT
+from django_valkey.base_client import DEFAULT_TIMEOUT, _main_exceptions
 from django_valkey.client.default import DefaultClient
 from django_valkey.exceptions import ConnectionInterrupted
 from django_valkey.hash_ring import HashRing
@@ -183,7 +182,7 @@ class ShardClient(DefaultClient):
         try:
             for connection in self._server_dict.values():
                 keys.extend(connection.keys(pattern))
-        except ConnectionError as e:
+        except _main_exceptions as e:
             # FIXME: technically all clients should be passed as `connection`.
             client = self.get_client(key=pattern)
             raise ConnectionInterrupted(connection=client) from e

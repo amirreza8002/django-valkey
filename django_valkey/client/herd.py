@@ -1,20 +1,17 @@
-import socket
 from collections.abc import Iterable
 from typing import Any
 
 from valkey import Valkey
-from valkey.exceptions import ConnectionError, ResponseError, TimeoutError
 from valkey.typing import KeyT, EncodableT
 
 from django_valkey.base_client import (
     DEFAULT_TIMEOUT,
     Backend,
     HerdCommonMethods,
+    _main_exceptions,
 )
 from django_valkey.client.default import DefaultClient
 from django_valkey.exceptions import ConnectionInterrupted
-
-_main_exceptions = (ConnectionError, ResponseError, TimeoutError, socket.timeout)
 
 
 class HerdClient(HerdCommonMethods, DefaultClient):
