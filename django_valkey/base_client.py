@@ -928,13 +928,14 @@ class ClientCommands(Generic[Backend]):
         _type: str | None = None,
         client: Backend | None = None,
         version: int | None = None,
+        **kwargs,
     ) -> tuple[int, list[str]]:
         client = self._get_client(write=False, client=client)
         pattern = self.make_pattern(match, version=version)
 
         try:
             cursor, result = client.scan(
-                cursor=cursor, match=pattern, count=count, _type=_type
+                cursor=cursor, match=pattern, count=count, _type=_type, **kwargs
             )
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
@@ -2269,12 +2270,13 @@ class AsyncClientCommands(Generic[Backend]):
         _type: str | None = None,
         client: Backend | None = None,
         version: int | None = None,
+        **kwargs,
     ) -> tuple[int, list[str]]:
         client = await self._get_client(write=False, client=client)
         pattern = self.make_pattern(match, version=version)
         try:
             cursor, result = await client.scan(
-                cursor=cursor, match=pattern, count=count, _type=_type
+                cursor=cursor, match=pattern, count=count, _type=_type, **kwargs
             )
 
         except _main_exceptions as e:
