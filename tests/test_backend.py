@@ -827,6 +827,26 @@ class TestDjangoValkeyCache:
         _, res2 = cache.scan(cursor=cursor, match="foo*")
         assert len(set(res) ^ set(res2)) == len(res) + len(res2)
 
+    def test_scan_for_hash_type(self, cache: ValkeyCache):
+        if isinstance(cache.client, ShardClient):
+            pytest.skip("ShardClient doesn't support scan")
+
+        cache.hset("foo", "foo1", "bar1")
+        cache.hset("bar", "bar1", "foo1")
+
+        _, res = cache.scan(_type="HASH")
+        assert res == ["foo", "bar"]
+
+    def test_scan_for_set_type(self, cache: ValkeyCache):
+        if isinstance(cache.client, ShardClient):
+            pytest.skip("ShardClient doesn't support scan")
+
+        cache.sadd("foo_set1", "a", "b", "c", "d")
+        cache.sadd("foo_set2", "e", "f", "g", "h")
+
+        _, res = cache.scan(_type="SET")
+        assert res == ["foo_set1", "foo_set2"]
+
     def test_primary_replica_switching(self, cache: ValkeyCache):
         if isinstance(cache.client, ShardClient):
             pytest.skip("shard client handles connections differently")
