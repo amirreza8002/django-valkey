@@ -3,11 +3,11 @@ from typing import Dict
 from valkey.cluster import ValkeyCluster
 from valkey.typing import KeyT, EncodableT
 
-from django_valkey.base_client import BaseClient, _main_exceptions
+from django_valkey.base_client import BaseClient, ClientCommands, _main_exceptions
 from django_valkey.exceptions import ConnectionInterrupted
 
 
-class DefaultClusterClient(BaseClient[ValkeyCluster]):
+class DefaultClusterClient(ClientCommands, BaseClient[ValkeyCluster]):
     CONNECTION_FACTORY_PATH = (
         "django_valkey.cluster_cache.pool.ClusterConnectionFactory"
     )
