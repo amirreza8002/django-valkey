@@ -11,6 +11,46 @@ from django_valkey.client.default import DefaultClient
 from django_valkey.exceptions import ConnectionInterrupted
 from django_valkey.hash_ring import HashRing
 
+"""
+supported methods:
+
+`add()`
+`get()`
+`get_many()`
+`set()`
+`set_many()`
+`has_key()`
+`delete()`
+`delete_many()`
+`delete_pattern()`
+`ttl()`
+`pttl()`
+`persist()`
+`expire()`
+`expire_at()`
+`pexpire()`
+`pexpire_at()`
+`get_lock()`
+`incr_version()`
+`incr()`
+`decr()`
+`keys()`
+`close()`
+`touch()`
+`clear()`
+`sadd()`
+`scard()`
+`smembers()`
+`smove()`
+`srem()`
+`sscan()`
+`sscan_iter()`
+`srandmember()`
+`sismember()`
+`spop()`
+`smismember()`
+"""
+
 
 class ShardClient(DefaultClient):
     _findhash = re.compile(r".*\{(.*)\}.*", re.I)
@@ -223,44 +263,3 @@ class ShardClient(DefaultClient):
     def clear(self, client=None) -> None:
         for connection in self._server_dict.values():
             connection.flushdb()
-
-
-"""
-supported methods:
-
-`add()`
-`get()`
-`get_many()`
-`set()`
-`set_many()`
-`has_key()`
-`delete()`
-`delete_many()`
-`delete_pattern()`
-`ttl()`
-`pttl()`
-`persist()`
-`expire()`
-`expire_at()`
-`pexpire()`
-`pexpire_at()`
-`get_lock()`
-`incr_version()`
-`incr()`
-`decr()`
-`keys()`
-`close()`
-`touch()`
-`clear()`
-`sadd()`
-`scard()`
-`smembers()`
-`smove()`
-`srem()`
-`sscan()`
-`sscan_iter()`
-`srandmember()`
-`sismember()`
-`spop()`
-`smismember()`
-"""
