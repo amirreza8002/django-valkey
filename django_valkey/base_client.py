@@ -402,7 +402,10 @@ class ClientCommands(Generic[Backend]):
 
         client = self._get_client(write=True, client=client, key=key)
 
-        return client.persist(key)
+        try:
+            return client.persist(key)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def expire(
         self: BaseClient,
@@ -420,7 +423,10 @@ class ClientCommands(Generic[Backend]):
 
         # for some strange reason mypy complains,
         # saying that timeout type is float | timedelta
-        return client.expire(key, timeout)  # type: ignore
+        try:
+            return client.expire(key, timeout)  # type: ignore
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def expire_at(
         self: BaseClient,
@@ -437,7 +443,10 @@ class ClientCommands(Generic[Backend]):
 
         client = self._get_client(write=True, client=client, key=key)
 
-        return client.expireat(key, when)
+        try:
+            return client.expireat(key, when)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def pexpire(
         self: BaseClient,
@@ -456,7 +465,10 @@ class ClientCommands(Generic[Backend]):
         # TODO: see if the casting is necessary
         # for some strange reason mypy complains,
         # saying that timeout type is float | timedelta
-        return client.pexpire(key, timeout)
+        try:
+            return client.pexpire(key, timeout)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def pexpire_at(
         self: BaseClient,
@@ -473,7 +485,10 @@ class ClientCommands(Generic[Backend]):
 
         client = self._get_client(write=True, client=client, key=key)
 
-        return client.pexpireat(key, when)
+        try:
+            return client.pexpireat(key, when)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def get_lock(
         self: BaseClient,
@@ -491,15 +506,18 @@ class ClientCommands(Generic[Backend]):
 
         client = self._get_client(write=True, client=client, key=key)
 
-        return client.lock(
-            key,
-            timeout=timeout,
-            sleep=sleep,
-            blocking=blocking,
-            blocking_timeout=blocking_timeout,
-            lock_class=lock_class,
-            thread_local=thread_local,
-        )
+        try:
+            return client.lock(
+                key,
+                timeout=timeout,
+                sleep=sleep,
+                blocking=blocking,
+                blocking_timeout=blocking_timeout,
+                lock_class=lock_class,
+                thread_local=thread_local,
+            )
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     # TODO: delete this in future releases
     lock = get_lock
@@ -539,10 +557,10 @@ class ClientCommands(Generic[Backend]):
 
         pattern = self.make_pattern(pattern, version=version, prefix=prefix)
 
-        try:
-            count = 0
-            pipeline = client.pipeline()
+        count = 0
+        pipeline = client.pipeline()
 
+        try:
             for key in client.scan_iter(match=pattern, count=itersize):
                 pipeline.delete(key)
                 count += 1
@@ -628,13 +646,12 @@ class ClientCommands(Generic[Backend]):
         """
         client = self._get_client(write=False, client=client)
 
+        pipeline = client.pipeline()
+        for key in keys:
+            key = self.make_key(key, version=version)
+            pipeline.get(key)
         try:
-            pipeline = client.pipeline()
-            for key in keys:
-                key = self.make_key(key, version=version)
-                pipeline.get(key)
             values = pipeline.execute()
-
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 
@@ -661,10 +678,10 @@ class ClientCommands(Generic[Backend]):
         """
         client = self._get_client(write=True, client=client)
 
+        pipeline = client.pipeline()
+        for key, value in data.items():
+            self.set(key, value, timeout, version=version, client=pipeline)
         try:
-            pipeline = client.pipeline()
-            for key, value in data.items():
-                self.set(key, value, timeout, version=version, client=pipeline)
             pipeline.execute()
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
@@ -700,45 +717,43 @@ class ClientCommands(Generic[Backend]):
 
         client = self._get_client(write=True, client=client, key=key)
 
+        # if key expired after exists check, then we get
+        # key with wrong value and ttl -1.
+        # use lua script for atomicity
+        if not ignore_key_check:
+            lua = """
+            local exists = server.call('EXISTS', KEYS[1])
+            if (exists == 1) then
+                return server.call('INCRBY', KEYS[1], ARGV[1])
+            else return false end
+            """
+        else:
+            lua = """
+            return server.call('INCRBY', KEYS[1], ARGV[1])
+            """
         try:
-            try:
-                # if key expired after exists check, then we get
-                # key with wrong value and ttl -1.
-                # use lua script for atomicity
-                if not ignore_key_check:
-                    lua = """
-                    local exists = server.call('EXISTS', KEYS[1])
-                    if (exists == 1) then
-                        return server.call('INCRBY', KEYS[1], ARGV[1])
-                    else return false end
-                    """
-                else:
-                    lua = """
-                    return server.call('INCRBY', KEYS[1], ARGV[1])
-                    """
-                value = client.eval(lua, 1, key, delta)
-                if value is None:
-                    error_message = f"Key '{key!r}' not found"
-                    raise ValueError(error_message)
-            except ResponseError as e:
-                # if cached value or total value is greater than 64-bit signed
-                # integer.
-                # elif int is encoded. so valkey sees the data as string.
-                # In these situations valkey will throw ResponseError
+            value = client.eval(lua, 1, key, delta)
+            if value is None:
+                error_message = f"Key '{key!r}' not found"
+                raise ValueError(error_message)
+        except ResponseError as e:
+            # if cached value or total value is greater than 64-bit signed
+            # integer.
+            # elif int is encoded. so valkey sees the data as string.
+            # In these situations valkey will throw ResponseError
 
-                # try to keep TTL of key
-                timeout = self.ttl(key, version=version, client=client)
+            # try to keep TTL of key
+            timeout = self.ttl(key, version=version, client=client)
 
-                # returns -2 if the key does not exist
-                # means, that key have expired
-                if timeout == -2:
-                    error_message = f"Key '{key!r}' not found"
-                    raise ValueError(error_message) from e
-                value = self.get(key, version=version, client=client) + delta
-                self.set(key, value, version=version, timeout=timeout, client=client)
+            # returns -2 if the key does not exist
+            # means, that key have expired
+            if timeout == -2:
+                error_message = f"Key '{key!r}' not found"
+                raise ValueError(error_message) from e
+            value = self.get(key, version=version, client=client) + delta
+            self.set(key, value, version=version, timeout=timeout, client=client)
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
-
         return value
 
     def incr(
@@ -789,10 +804,13 @@ class ClientCommands(Generic[Backend]):
 
         client = self._get_client(write=False, client=client, key=key)
 
-        if not client.exists(key):
-            return 0
+        try:
+            if not client.exists(key):
+                return 0
 
-        t = client.ttl(key)
+            t = client.ttl(key)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
         if t >= 0:
             return t
@@ -815,10 +833,13 @@ class ClientCommands(Generic[Backend]):
         key = self.make_key(key, version=version)
         client = self._get_client(write=False, client=client, key=key)
 
-        if not client.exists(key):
-            return 0
+        try:
+            if not client.exists(key):
+                return 0
 
-        t = client.pttl(key)
+            t = client.pttl(key)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
         if t >= 0:
             return t
@@ -860,8 +881,11 @@ class ClientCommands(Generic[Backend]):
         client = self._get_client(write=False, client=client)
 
         pattern = self.make_pattern(search, version=version)
-        for item in client.scan_iter(match=pattern, count=itersize):
-            yield self.reverse_key(item.decode())
+        try:
+            for item in client.scan_iter(match=pattern, count=itersize):
+                yield self.reverse_key(item.decode())
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def keys(
         self: BaseClient,
@@ -896,7 +920,10 @@ class ClientCommands(Generic[Backend]):
         client = self._get_client(write=True, client=client, key=key)
 
         encoded_values = [self.encode(value) for value in values]
-        return client.sadd(key, *encoded_values)
+        try:
+            return client.sadd(key, *encoded_values)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def scard(
         self: BaseClient,
@@ -908,7 +935,10 @@ class ClientCommands(Generic[Backend]):
 
         client = self._get_client(write=False, client=client, key=key)
 
-        return client.scard(key)
+        try:
+            return client.scard(key)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def sdiff(
         self: BaseClient,
@@ -919,7 +949,10 @@ class ClientCommands(Generic[Backend]):
         client = self._get_client(write=False, client=client)
 
         nkeys = [self.make_key(key, version=version) for key in keys]
-        return {self.decode(value) for value in client.sdiff(*nkeys)}
+        try:
+            return {self.decode(value) for value in client.sdiff(*nkeys)}
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def sdiffstore(
         self: BaseClient,
@@ -933,7 +966,10 @@ class ClientCommands(Generic[Backend]):
 
         dest = self.make_key(dest, version=version_dest)
         nkeys = [self.make_key(key, version=version_keys) for key in keys]
-        return client.sdiffstore(dest, *nkeys)
+        try:
+            return client.sdiffstore(dest, *nkeys)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def sinter(
         self: BaseClient,
@@ -944,7 +980,10 @@ class ClientCommands(Generic[Backend]):
         client = self._get_client(write=False, client=client)
 
         nkeys = [self.make_key(key, version=version) for key in keys]
-        return {self.decode(value) for value in client.sinter(*nkeys)}
+        try:
+            return {self.decode(value) for value in client.sinter(*nkeys)}
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def sinterstore(
         self: BaseClient,
@@ -957,7 +996,10 @@ class ClientCommands(Generic[Backend]):
 
         dest = self.make_key(dest, version=version)
         nkeys = [self.make_key(key, version=version) for key in keys]
-        return client.sinterstore(dest, *nkeys)
+        try:
+            return client.sinterstore(dest, *nkeys)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def smismember(
         self: BaseClient,
@@ -972,7 +1014,10 @@ class ClientCommands(Generic[Backend]):
 
         encoded_members = [self.encode(member) for member in members]
 
-        return [bool(value) for value in client.smismember(key, *encoded_members)]
+        try:
+            return [bool(value) for value in client.smismember(key, *encoded_members)]
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def sismember(
         self: BaseClient,
@@ -986,7 +1031,10 @@ class ClientCommands(Generic[Backend]):
         client = self._get_client(write=False, client=client, key=key)
 
         member = self.encode(member)
-        return bool(client.sismember(key, member))
+        try:
+            return bool(client.sismember(key, member))
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def smembers(
         self: BaseClient,
@@ -998,7 +1046,10 @@ class ClientCommands(Generic[Backend]):
 
         client = self._get_client(write=False, client=client, key=key)
 
-        return {self.decode(value) for value in client.smembers(key)}
+        try:
+            return {self.decode(value) for value in client.smembers(key)}
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def smove(
         self: BaseClient,
@@ -1014,7 +1065,10 @@ class ClientCommands(Generic[Backend]):
         client = self._get_client(write=True, client=client, key=source)
 
         member = self.encode(member)
-        return client.smove(source, destination, member)
+        try:
+            return client.smove(source, destination, member)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def spop(
         self: BaseClient,
@@ -1027,7 +1081,10 @@ class ClientCommands(Generic[Backend]):
 
         client = self._get_client(write=True, client=client, key=nkey)
 
-        result = client.spop(nkey, count)
+        try:
+            result = client.spop(nkey, count)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
         return self._decode_iterable_result(result)
 
     def srandmember(
@@ -1041,7 +1098,10 @@ class ClientCommands(Generic[Backend]):
 
         client = self._get_client(write=False, client=client, key=key)
 
-        result = client.srandmember(key, count)
+        try:
+            result = client.srandmember(key, count)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
         return self._decode_iterable_result(result, convert_to_set=False)
 
     def srem(
@@ -1056,7 +1116,10 @@ class ClientCommands(Generic[Backend]):
         client = self._get_client(write=True, client=client, key=key)
 
         nmembers = [self.encode(member) for member in members]
-        return client.srem(key, *nmembers)
+        try:
+            return client.srem(key, *nmembers)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def sscan(
         self: BaseClient,
@@ -1074,11 +1137,14 @@ class ClientCommands(Generic[Backend]):
 
         client = self._get_client(write=False, client=client, key=key)
 
-        cursor, result = client.sscan(
-            key,
-            match=cast(PatternT, self.encode(match)) if match else None,
-            count=count,
-        )
+        try:
+            cursor, result = client.sscan(
+                key,
+                match=cast(PatternT, self.encode(match)) if match else None,
+                count=count,
+            )
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
         return {self.decode(value) for value in result}
 
     def sscan_iter(
@@ -1097,12 +1163,15 @@ class ClientCommands(Generic[Backend]):
 
         client = self._get_client(write=False, client=client, key=key)
 
-        for value in client.sscan_iter(
-            key,
-            match=cast(PatternT, self.encode(match)) if match else None,
-            count=count,
-        ):
-            yield self.decode(value)
+        try:
+            for value in client.sscan_iter(
+                key,
+                match=cast(PatternT, self.encode(match)) if match else None,
+                count=count,
+            ):
+                yield self.decode(value)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def sunion(
         self: BaseClient,
@@ -1113,7 +1182,10 @@ class ClientCommands(Generic[Backend]):
         client = self._get_client(write=False, client=client)
 
         nkeys = [self.make_key(key, version=version) for key in keys]
-        return {self.decode(value) for value in client.sunion(*nkeys)}
+        try:
+            return {self.decode(value) for value in client.sunion(*nkeys)}
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def sunionstore(
         self: BaseClient,
@@ -1126,7 +1198,10 @@ class ClientCommands(Generic[Backend]):
 
         destination = self.make_key(destination, version=version)
         encoded_keys = [self.make_key(key, version=version) for key in keys]
-        return client.sunionstore(destination, *encoded_keys)
+        try:
+            return client.sunionstore(destination, *encoded_keys)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def close(self) -> None:
         close_flag = self._options.get(
@@ -1134,7 +1209,10 @@ class ClientCommands(Generic[Backend]):
             getattr(settings, "DJANGO_VALKEY_CLOSE_CONNECTION", False),
         )
         if close_flag:
-            self._close()
+            try:
+                self._close()
+            except _main_exceptions as e:
+                raise ConnectionInterrupted(connection=self._clients) from e
 
     def _close(self) -> None:
         """
@@ -1164,11 +1242,17 @@ class ClientCommands(Generic[Backend]):
         client = self._get_client(write=True, client=client, key=key)
 
         if timeout is None:
-            return bool(client.persist(key))
+            try:
+                return bool(client.persist(key))
+            except _main_exceptions as e:
+                raise ConnectionInterrupted(connection=client) from e
 
         # Convert to milliseconds
         timeout = int(timeout * 1000)
-        return bool(client.pexpire(key, timeout))
+        try:
+            return bool(client.pexpire(key, timeout))
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def hset(
         self: BaseClient,
@@ -1185,7 +1269,10 @@ class ClientCommands(Generic[Backend]):
         client = self._get_client(write=True, client=client)
         nkey = self.make_key(key, version=version)
         nvalue = self.encode(value)
-        return client.hset(name, nkey, nvalue)
+        try:
+            return client.hset(name, nkey, nvalue)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def hdel(
         self: BaseClient,
@@ -1200,7 +1287,10 @@ class ClientCommands(Generic[Backend]):
         """
         client = self._get_client(write=True, client=client)
         nkey = self.make_key(key, version=version)
-        return client.hdel(name, nkey)
+        try:
+            return client.hdel(name, nkey)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def hlen(
         self: BaseClient,
@@ -1211,7 +1301,10 @@ class ClientCommands(Generic[Backend]):
         Return the number of items in hash name.
         """
         client = self._get_client(write=False, client=client)
-        return client.hlen(name)
+        try:
+            return client.hlen(name)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     def hkeys(
         self: BaseClient,
@@ -1239,7 +1332,10 @@ class ClientCommands(Generic[Backend]):
         """
         client = self._get_client(write=False, client=client)
         nkey = self.make_key(key, version=version)
-        return client.hexists(name, nkey)
+        try:
+            return client.hexists(name, nkey)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
 
 class AsyncClientCommands(Generic[Backend]):
@@ -1422,7 +1518,10 @@ class AsyncClientCommands(Generic[Backend]):
         client = await self._get_client(write=True, client=client)
         key = self.make_key(key, version=version)
 
-        return await client.persist(key)
+        try:
+            return await client.persist(key)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def expire(
         self,
@@ -1438,7 +1537,10 @@ class AsyncClientCommands(Generic[Backend]):
 
         key = self.make_key(key, version=version)
 
-        return await client.expire(key, timeout)
+        try:
+            return await client.expire(key, timeout)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def expire_at(
         self, key, when, version: int | None = None, client: Backend | Any | None = None
@@ -1447,7 +1549,10 @@ class AsyncClientCommands(Generic[Backend]):
 
         key = self.make_key(key, version=version)
 
-        return await client.expireat(key, when)
+        try:
+            return await client.expireat(key, when)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def pexpire(
         self,
@@ -1463,7 +1568,10 @@ class AsyncClientCommands(Generic[Backend]):
 
         key = self.make_key(key, version=version)
 
-        return await client.pexpire(key, timeout)
+        try:
+            return await client.pexpire(key, timeout)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def pexpire_at(
         self, key, when, version: int | None = None, client: Backend | Any | None = None
@@ -1472,7 +1580,10 @@ class AsyncClientCommands(Generic[Backend]):
 
         key = self.make_key(key, version=version)
 
-        return await client.pexpireat(key, when)
+        try:
+            return await client.pexpireat(key, when)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def get_lock(
         self,
@@ -1492,15 +1603,18 @@ class AsyncClientCommands(Generic[Backend]):
 
         key = self.make_key(key, version=version)
 
-        return client.lock(
-            key,
-            timeout=timeout,
-            sleep=sleep,
-            blocking=blocking,
-            blocking_timeout=blocking_timeout,
-            lock_class=lock_class,
-            thread_local=thread_local,
-        )
+        try:
+            return client.lock(
+                key,
+                timeout=timeout,
+                sleep=sleep,
+                blocking=blocking,
+                blocking_timeout=blocking_timeout,
+                lock_class=lock_class,
+                thread_local=thread_local,
+            )
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     # TODO: delete this in future releases
     lock = aget_lock = get_lock
@@ -1536,10 +1650,10 @@ class AsyncClientCommands(Generic[Backend]):
 
         pattern = self.make_pattern(pattern, version=version, prefix=prefix)
 
-        try:
-            count = 0
-            pipeline = await client.pipeline()
+        count = 0
+        pipeline = await client.pipeline()
 
+        try:
             async with contextlib.aclosing(
                 client.scan_iter(match=pattern, count=itersize)
             ) as values:
@@ -1617,11 +1731,11 @@ class AsyncClientCommands(Generic[Backend]):
         """
         client = await self._get_client(write=False, client=client)
 
+        pipeline = await client.pipeline()
+        for key in keys:
+            key = self.make_key(key, version=version)
+            await pipeline.get(key)
         try:
-            pipeline = await client.pipeline()
-            for key in keys:
-                key = self.make_key(key, version=version)
-                await pipeline.get(key)
             values = await pipeline.execute()
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
@@ -1642,10 +1756,10 @@ class AsyncClientCommands(Generic[Backend]):
     ) -> None:
         client = await self._get_client(write=True, client=client)
 
+        pipeline = await client.pipeline()
+        for key, value in data.items():
+            await self.set(key, value, timeout, version=version, client=pipeline)
         try:
-            pipeline = await client.pipeline()
-            for key, value in data.items():
-                await self.set(key, value, timeout, version=version, client=pipeline)
             await pipeline.execute()
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
@@ -1679,42 +1793,39 @@ class AsyncClientCommands(Generic[Backend]):
         client = await self._get_client(write=True, client=client)
         key = self.make_key(key, version=version)
 
+        # if key expired after exists check, then we get
+        # key with wrong value and ttl -1.
+        # use lua script for atomicity
+        if not ignoree_key_check:
+            lua = """
+            local exists = server.call('EXISTS', KEYS[1])
+            if (exists == 1) then
+                return server.call('INCRBY', KEYS[1], ARGV[1])
+            else return false end
+            """
+        else:
+            lua = """
+            return server.call('INCRBY', KEYS[1], ARGV[1])
+            """
         try:
-            try:
-                # if key expired after exists check, then we get
-                # key with wrong value and ttl -1.
-                # use lua script for atomicity
-                if not ignoree_key_check:
-                    lua = """
-                    local exists = server.call('EXISTS', KEYS[1])
-                    if (exists == 1) then
-                        return server.call('INCRBY', KEYS[1], ARGV[1])
-                    else return false end
-                    """
-                else:
-                    lua = """
-                    return server.call('INCRBY', KEYS[1], ARGV[1])
-                    """
-                value = await client.eval(lua, 1, key, delta)
-                if value is None:
-                    error_message = f"Key '{key!r}' not found"
-                    raise ValueError(error_message)
-            except ResponseError as e:
-                # if cached value or total value is greater than 64-bit signed
-                # integer.
-                # elif int is encoded. so valkey sees the data as string.
-                # In these situations valkey will throw ResponseError
+            value = await client.eval(lua, 1, key, delta)
+            if value is None:
+                error_message = f"Key '{key!r}' not found"
+                raise ValueError(error_message)
+        except ResponseError as e:
+            # if cached value or total value is greater than 64-bit signed
+            # integer.
+            # elif int is encoded. so valkey sees the data as string.
+            # In these situations valkey will throw ResponseError
 
-                # try to keep TTL of key
-                timeout = await self.ttl(key, version=version, client=client)
+            # try to keep TTL of key
+            timeout = await self.ttl(key, version=version, client=client)
 
-                if timeout == -2:
-                    error_message = f"Key '{key!r}' not found"
-                    raise ValueError(error_message) from e
-                value = await self.get(key, version=version, client=client) + delta
-                await self.set(
-                    key, value, version=version, timeout=timeout, client=client
-                )
+            if timeout == -2:
+                error_message = f"Key '{key!r}' not found"
+                raise ValueError(error_message) from e
+            value = await self.get(key, version=version, client=client) + delta
+            await self.set(key, value, version=version, timeout=timeout, client=client)
         except _main_exceptions as e:
             raise ConnectionInterrupted(connection=client) from e
 
@@ -1763,10 +1874,13 @@ class AsyncClientCommands(Generic[Backend]):
         """
         client = await self._get_client(write=False, client=client)
         key = self.make_key(key, version=version)
-        if not await client.exists(key):
-            return 0
+        try:
+            if not await client.exists(key):
+                return 0
 
-        t = await client.ttl(key)
+            t = await client.ttl(key)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
         if t >= 0:
             return t
         if t == -2:
@@ -1784,10 +1898,13 @@ class AsyncClientCommands(Generic[Backend]):
         client = await self._get_client(write=False, client=client)
 
         key = self.make_key(key, version=version)
-        if not await client.exists(key):
-            return 0
+        try:
+            if not await client.exists(key):
+                return 0
 
-        t = await client.pttl(key)
+            t = await client.pttl(key)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
         if t >= 0:
             return t
@@ -1823,11 +1940,14 @@ class AsyncClientCommands(Generic[Backend]):
         """
         client = await self._get_client(write=False, client=client)
         pattern = self.make_pattern(search, version=version)
-        async with contextlib.aclosing(
-            client.scan_iter(match=pattern, count=itersize)
-        ) as values:
-            async for item in values:
-                yield self.reverse_key(item.decode())
+        try:
+            async with contextlib.aclosing(
+                client.scan_iter(match=pattern, count=itersize)
+            ) as values:
+                async for item in values:
+                    yield self.reverse_key(item.decode())
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def keys(
         self,
@@ -1854,21 +1974,30 @@ class AsyncClientCommands(Generic[Backend]):
         key = self.make_key(key, version=version)
         encoded_values = [self.encode(value) for value in values]
 
-        return await client.sadd(key, *encoded_values)
+        try:
+            return await client.sadd(key, *encoded_values)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def scard(
         self, key, version: int | None = None, client: Backend | Any | None = None
     ) -> int:
         client = await self._get_client(write=False, client=client)
         key = self.make_key(key, version=version)
-        return await client.scard(key)
+        try:
+            return await client.scard(key)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def sdiff(
         self, *keys, version: int | None = None, client: Backend | Any | None = None
     ) -> Set[Any]:
         client = await self._get_client(write=False, client=client)
         nkeys = [self.make_key(key, version=version) for key in keys]
-        return {self.decode(value) for value in await client.sdiff(*nkeys)}
+        try:
+            return {self.decode(value) for value in await client.sdiff(*nkeys)}
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def sdiffstore(
         self,
@@ -1881,14 +2010,20 @@ class AsyncClientCommands(Generic[Backend]):
         client = await self._get_client(write=True, client=client)
         dest = self.make_key(dest, version=version_dest)
         nkeys = [self.make_key(key, version=version_keys) for key in keys]
-        return await client.sdiffstore(dest, *nkeys)
+        try:
+            return await client.sdiffstore(dest, *nkeys)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def sinter(
         self, *keys, version: int | None = None, client: Backend | Any | None = None
     ) -> Set[Any]:
         client = await self._get_client(write=False, client=client)
         nkeys = [self.make_key(key, version=version) for key in keys]
-        return {self.decode(value) for value in await client.sinter(*nkeys)}
+        try:
+            return {self.decode(value) for value in await client.sinter(*nkeys)}
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def sinterstore(
         self,
@@ -1901,7 +2036,10 @@ class AsyncClientCommands(Generic[Backend]):
         dest = self.make_key(dest, version=version)
         nkeys = [self.make_key(key, version=version) for key in keys]
 
-        return await client.sinterstore(dest, *nkeys)
+        try:
+            return await client.sinterstore(dest, *nkeys)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def smismember(
         self,
@@ -1915,7 +2053,12 @@ class AsyncClientCommands(Generic[Backend]):
         key = self.make_key(key, version=version)
         encoded_members = [self.encode(member) for member in members]
 
-        return [bool(value) for value in await client.smismember(key, *encoded_members)]
+        try:
+            return [
+                bool(value) for value in await client.smismember(key, *encoded_members)
+            ]
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def sismember(
         self,
@@ -1928,7 +2071,10 @@ class AsyncClientCommands(Generic[Backend]):
 
         key = self.make_key(key, version=version)
         member = self.encode(member)
-        return bool(await client.sismember(key, member))
+        try:
+            return bool(await client.sismember(key, member))
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def smembers(
         self, key, version: int | None = None, client: Backend | Any | None = None
@@ -1936,7 +2082,10 @@ class AsyncClientCommands(Generic[Backend]):
         client = await self._get_client(write=False, client=client)
 
         key = self.make_key(key, version=version)
-        return {self.decode(value) for value in await client.smembers(key)}
+        try:
+            return {self.decode(value) for value in await client.smembers(key)}
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def smove(
         self,
@@ -1950,7 +2099,10 @@ class AsyncClientCommands(Generic[Backend]):
         source = self.make_key(source, version=version)
         destination = self.make_key(destination, version=version)
         member = self.encode(member)
-        return await client.smove(source, destination, member)
+        try:
+            return await client.smove(source, destination, member)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def spop(
         self,
@@ -1961,7 +2113,10 @@ class AsyncClientCommands(Generic[Backend]):
     ) -> Set | Any:
         client = await self._get_client(write=True, client=client)
         nkey = self.make_key(key, version=version)
-        result = await client.spop(nkey, count)
+        try:
+            result = await client.spop(nkey, count)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
         return self._decode_iterable_result(result)
 
     async def srandmember(
@@ -1973,7 +2128,10 @@ class AsyncClientCommands(Generic[Backend]):
     ) -> list | Any:
         client = await self._get_client(write=False, client=client)
         key = self.make_key(key, version=version)
-        result = await client.srandmember(key, count)
+        try:
+            result = await client.srandmember(key, count)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
         return self._decode_iterable_result(result, convert_to_set=False)
 
     async def srem(
@@ -1987,7 +2145,10 @@ class AsyncClientCommands(Generic[Backend]):
 
         key = self.make_key(key, version=version)
         nmembers = [self.encode(member) for member in members]
-        return await client.srem(key, *nmembers)
+        try:
+            return await client.srem(key, *nmembers)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def sscan(
         self,
@@ -2005,11 +2166,14 @@ class AsyncClientCommands(Generic[Backend]):
         client = await self._get_client(write=False, client=client)
 
         key = self.make_key(key, version=version)
-        cursor, result = await client.sscan(
-            key,
-            match=cast(PatternT, self.encode(match)) if match else None,
-            count=count,
-        )
+        try:
+            cursor, result = await client.sscan(
+                key,
+                match=cast(PatternT, self.encode(match)) if match else None,
+                count=count,
+            )
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
         return {self.decode(value) for value in result}
 
     async def sscan_iter(
@@ -2028,15 +2192,18 @@ class AsyncClientCommands(Generic[Backend]):
 
         key = self.make_key(key, version=version)
 
-        async with contextlib.aclosing(
-            client.sscan_iter(
-                key,
-                match=cast(PatternT, self.encode(match)) if match else None,
-                count=count,
-            )
-        ) as values:
-            async for value in values:
-                yield self.decode(value)
+        try:
+            async with contextlib.aclosing(
+                client.sscan_iter(
+                    key,
+                    match=cast(PatternT, self.encode(match)) if match else None,
+                    count=count,
+                )
+            ) as values:
+                async for value in values:
+                    yield self.decode(value)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def sunion(
         self,
@@ -2047,7 +2214,10 @@ class AsyncClientCommands(Generic[Backend]):
         client = await self._get_client(write=False, client=client)
 
         nkeys = [self.make_key(key, version=version) for key in keys]
-        return {self.decode(value) for value in await client.sunion(*nkeys)}
+        try:
+            return {self.decode(value) for value in await client.sunion(*nkeys)}
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def sunionstore(
         self,
@@ -2059,7 +2229,10 @@ class AsyncClientCommands(Generic[Backend]):
         client = await self._get_client(write=True, client=client)
         destination = self.make_key(destination, version=version)
         encoded_keys = [self.make_key(key, version=version) for key in keys]
-        return await client.sunionstore(destination, *encoded_keys)
+        try:
+            return await client.sunionstore(destination, *encoded_keys)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def close(self) -> None:
         close_flag = self._options.get(
@@ -2067,7 +2240,10 @@ class AsyncClientCommands(Generic[Backend]):
             getattr(settings, "DJANGO_VALKEY_CLOSE_CONNECTION", False),
         )
         if close_flag:
-            await self._close()
+            try:
+                await self._close()
+            except _main_exceptions as e:
+                raise ConnectionInterrupted(connection=self._clients) from e
 
     async def _close(self) -> None:
         """
@@ -2096,11 +2272,17 @@ class AsyncClientCommands(Generic[Backend]):
 
         key = self.make_key(key, version=version)
         if timeout is None:
-            return bool(await client.persist(key))
+            try:
+                return bool(await client.persist(key))
+            except _main_exceptions as e:
+                raise ConnectionInterrupted(connection=client) from e
 
         # convert timeout to milliseconds
         timeout = int(timeout * 1000)
-        return bool(await client.pexpire(key, timeout))
+        try:
+            return bool(await client.pexpire(key, timeout))
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def hset(
         self,
@@ -2119,7 +2301,10 @@ class AsyncClientCommands(Generic[Backend]):
         nkey = self.make_key(key, version)
         nvalue = self.encode(value)
 
-        return await client.hset(name, nkey, nvalue)
+        try:
+            return await client.hset(name, nkey, nvalue)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def hdel(
         self,
@@ -2134,14 +2319,20 @@ class AsyncClientCommands(Generic[Backend]):
         """
         client = await self._get_client(write=True, client=client)
         nkey = self.make_key(key, version=version)
-        return await client.hdel(name, nkey)
+        try:
+            return await client.hdel(name, nkey)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def hlen(self, name: str, client: Backend | Any | None = None) -> int:
         """
         Return the number of items in hash name.
         """
         client = await self._get_client(write=False, client=client)
-        return await client.hlen(name)
+        try:
+            return await client.hlen(name)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
     async def hkeys(self, name: str, client: Backend | Any | None = None) -> list[Any]:
         client = await self._get_client(write=False, client=client)
@@ -2163,7 +2354,10 @@ class AsyncClientCommands(Generic[Backend]):
         """
         client = await self._get_client(write=False, client=client)
         nkey = self.make_key(key, version=version)
-        return await client.hexists(name, nkey)
+        try:
+            return await client.hexists(name, nkey)
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=client) from e
 
 
 # Herd related code:
