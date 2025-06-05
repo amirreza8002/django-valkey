@@ -1,6 +1,7 @@
 import builtins
 import contextlib
 import functools
+import inspect
 import logging
 from asyncio import iscoroutinefunction
 from collections.abc import AsyncGenerator, Callable, Iterator
@@ -60,30 +61,59 @@ def omit_exception(method: Callable | None = None, return_value: Any | None = No
     if method is None:
         return functools.partial(omit_exception, return_value=return_value)
 
+    def __handle_error(self, e) -> Any | None:
+        if getattr(self, "_ignore_exceptions", None):
+            if getattr(self, "_log_ignored_exceptions", None):
+                self.logger.exception("Exception ignored")
+
+            return return_value
+        raise e.__cause__
+
     @functools.wraps(method)
     def _decorator(self, *args, **kwargs):
         try:
             return method(self, *args, **kwargs)
         except ConnectionInterrupted as e:
-            if self._ignore_exceptions:
-                if self._log_ignored_exceptions:
-                    self.logger.exception("Exception ignored")
+            return __handle_error(self, e)
 
-                return return_value
-            raise e.__cause__  # noqa: B904
+    @functools.wraps(method)
+    def _generator_decorator(self, *args, **kwargs):
+        try:
+            for item in method(self, *args, **kwargs):
+                yield item
+        except ConnectionInterrupted as e:
+            yield __handle_error(self, e)
 
     @functools.wraps(method)
     async def _async_decorator(self, *args, **kwargs):
         try:
             return await method(self, *args, **kwargs)
         except ConnectionInterrupted as e:
-            if self._ignore_exceptions:
-                if self._log_ignored_exceptions:
-                    self.logger.exception("Exception ignored")
-                return return_value
-            raise e.__cause__
+            return __handle_error(self, e)
 
-    wrapper = _async_decorator if iscoroutinefunction(method) else _decorator
+    @functools.wraps(method)
+    async def _async_generator_decorator(self, *args, **kwargs):
+        try:
+            async for item in method(self, *args, **kwargs):
+                yield item
+        except ConnectionInterrupted as e:
+            yield __handle_error(self, e)
+
+    # inspect.isfunction returns true for generators, so can't use that to check this
+    if not inspect.isasyncgenfunction(method) and not inspect.isgeneratorfunction(
+        method
+    ):
+        wrapper = _async_decorator if iscoroutinefunction(method) else _decorator
+
+    # if method is a generator or async generator, it should be iterated over by this decorator
+    # generators don't error by simply being called, they need to be iterated over.
+    else:
+        wrapper = (
+            _async_generator_decorator
+            if inspect.isasyncgenfunction(method)
+            else _generator_decorator
+        )
+
     wrapper.original = method
     return wrapper
 
