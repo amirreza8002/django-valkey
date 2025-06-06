@@ -3,10 +3,9 @@ from collections import OrderedDict
 from typing import Any, List, Dict
 
 from valkey import Valkey
-from valkey.exceptions import ConnectionError
 from valkey.typing import EncodableT, KeyT
 
-from django_valkey.base_client import DEFAULT_TIMEOUT
+from django_valkey.base_client import DEFAULT_TIMEOUT, _main_exceptions
 from django_valkey.client.default import DefaultClient
 from django_valkey.exceptions import ConnectionInterrupted
 from django_valkey.hash_ring import HashRing
@@ -223,10 +222,8 @@ class ShardClient(DefaultClient):
         try:
             for connection in self._server_dict.values():
                 keys.extend(connection.keys(pattern))
-        except ConnectionError as e:
-            # FIXME: technically all clients should be passed as `connection`.
-            client = self.get_client(key=pattern)
-            raise ConnectionInterrupted(connection=client) from e
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=self._server_dict.values()) from e
 
         return [self.reverse_key(k.decode()) for k in keys]
 
@@ -247,13 +244,21 @@ class ShardClient(DefaultClient):
             kwargs["count"] = itersize
 
         keys = []
-        for connection in self._server_dict.values():
-            keys.extend(key for key in connection.scan_iter(**kwargs))
+        try:
+            for connection in self._server_dict.values():
+                keys.extend(key for key in connection.scan_iter(**kwargs))
+        except _main_exceptions as e:
+            raise ConnectionInterrupted(connection=self._server_dict.values()) from e
 
         res = 0
         if keys:
-            for connection in self._server_dict.values():
-                res += connection.delete(*keys)
+            try:
+                for connection in self._server_dict.values():
+                    res += connection.delete(*keys)
+            except _main_exceptions as e:
+                raise ConnectionInterrupted(
+                    connection=self._server_dict.values()
+                ) from e
         return res
 
     def _close(self) -> None:
@@ -262,4 +267,7 @@ class ShardClient(DefaultClient):
 
     def clear(self, client=None) -> None:
         for connection in self._server_dict.values():
-            connection.flushdb()
+            try:
+                connection.flushdb()
+            except _main_exceptions as e:
+                raise ConnectionInterrupted(connection=connection) from e
