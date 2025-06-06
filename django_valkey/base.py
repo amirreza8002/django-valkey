@@ -48,6 +48,8 @@ def decorate_all_methods(decorator):
                     )
                 elif attr == "get_many":
                     setattr(cls, attr, decorator(attribute, return_value={}))
+                elif attr in {"iter_keys", "sscan_iter"}:
+                    setattr(cls, attr, decorator(attribute, gen=True))
                 else:
                     setattr(cls, attr, decorator(attribute))
         return cls
@@ -55,7 +57,9 @@ def decorate_all_methods(decorator):
     return decorate
 
 
-def omit_exception(method: Callable | None = None, return_value: Any | None = None):
+def omit_exception(
+    method: Callable | None = None, return_value: Any | None = None, gen: bool = False
+):
     """
     Simple decorator that intercepts connection
     errors and ignores these if settings specify this.
@@ -102,10 +106,10 @@ def omit_exception(method: Callable | None = None, return_value: Any | None = No
         except ConnectionInterrupted as e:
             yield __handle_error(self, e)
 
-    # inspect.isfunction returns true for generators, so can't use that to check this
-    if not inspect.isasyncgenfunction(method) and not inspect.isgeneratorfunction(
-        method
-    ):
+    # sync generators (iter_keys, sscan_iter) are only generator on client class
+    # in the backend they are just a function (that returns a generator)
+    # so inspect.isgeneratorfunction does not work
+    if not inspect.isasyncgenfunction(method) and not gen:
         wrapper = _async_decorator if iscoroutinefunction(method) else _decorator
 
     # if method is a generator or async generator, it should be iterated over by this decorator
