@@ -8,6 +8,7 @@ Version 0.3.0
 
 ### bug fix
 - fixed bug of `omit_exception` not handling generator and async generators
+- fixed bug of async `get_valkey_connection` checking if the client is async.
 
 ### internal change
 - moved all operations from `django_valkey.cache` and `django_valkey.async_cache.cache` to `django_valkey.base`.
