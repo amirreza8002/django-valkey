@@ -1,3 +1,26 @@
+Version 0.3.0
+-------------
+
+### New
+- now all operations support omitting exceptions
+- `make_key`, `make_pattern`, `encode` and `decode` are now functions, so they can be used outside the backend (e.g: when using the raw client)
+- `django_valkey.get_valkey_connection` now works with shard client as well
+
+### bug fix
+- fixed bug of `omit_exception` not handling generator and async generators
+- fixed bug of async `get_valkey_connection` checking if the client is async.
+
+### internal change
+- moved all operations from `django_valkey.cache` and `django_valkey.async_cache.cache` to `django_valkey.base`.
+- cluster client now uses the same methods as normal client, unless it has to have a specific method.
+- prefixing async methods with `a` is done dynamically now; (so no more `aset = set`), it's all handled in `__getattr__`.
+- moved async client methods to `django_valkey.base_client.AsyncClientCommands`.
+- moved sync client methods to `django_valkey.base_client.ClientCommands`.
+- `make_key`, `make_pattern`, `encode`, `decode`, `_decode_iterable_result` are now all sync methods and moved to `django_valkey.base_client.BaseClient`.
+- `AsyncHerdClient._pack` and `AsyncHerdClient._unpack` are now sync methods.
+- common parts of herd clients now live in `django_valkey.base_client`
+- shard client now has `get_client` instead of `get_server`
+
 Version 0.2.0
 -------------
 

@@ -4,10 +4,10 @@ from urllib.parse import urlparse, parse_qs
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.module_loading import import_string
 
+from valkey._parsers.url_parser import to_bool
 from valkey.asyncio import Valkey as AValkey
 from valkey.asyncio.connection import ConnectionPool, DefaultParser
 from valkey.asyncio.sentinel import Sentinel
-from valkey._parsers.url_parser import to_bool
 
 from django_valkey.base_pool import BaseConnectionFactory
 

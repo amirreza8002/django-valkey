@@ -1,6 +1,7 @@
 import pickle
 
 import pytest
+
 from django.core.exceptions import ImproperlyConfigured
 
 from django_valkey.serializers.pickle import PickleSerializer

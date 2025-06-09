@@ -12,7 +12,7 @@ False
 "value1"
 ```
 
-the list of supported commands is very long, if needed you can check the methods at ``django_valkey.cache.ValkeyCache```
+the list of supported commands is very long, if needed you can check the methods at `django_valkey.base.BackendCommands`.
 
 ### Infinite timeout
 

@@ -1,4 +1,4 @@
-from inspect import isawaitable
+from inspect import iscoroutinefunction
 
 
 async def get_valkey_connection(alias="default", write=True):
@@ -17,7 +17,7 @@ async def get_valkey_connection(alias="default", write=True):
     if not hasattr(cache.client, "get_client"):
         raise NotImplementedError(error_message)
 
-    if not isawaitable(cache.client.get_client):
+    if not iscoroutinefunction(cache.client.get_client):
         raise "use django_valkey.get_valkey_connection for sync backends"
 
     return await cache.client.get_client(write)
