@@ -9,7 +9,6 @@ from unittest.mock import patch, AsyncMock
 
 import pytest
 import pytest_asyncio
-
 from pytest_django.fixtures import SettingsWrapper
 from pytest_mock import MockerFixture
 

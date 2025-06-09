@@ -7,11 +7,12 @@ from typing import List, cast
 from unittest.mock import patch
 
 import pytest
+from pytest_django.fixtures import SettingsWrapper
+from pytest_mock import MockerFixture
+
 from django.core.cache import caches
 from django.core.cache.backends.base import DEFAULT_TIMEOUT
 from django.test import override_settings
-from pytest_django.fixtures import SettingsWrapper
-from pytest_mock import MockerFixture
 
 from django_valkey.cache import ValkeyCache
 from django_valkey.client import ShardClient, herd

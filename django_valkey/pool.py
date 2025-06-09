@@ -4,10 +4,11 @@ from urllib.parse import parse_qs, urlparse
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.module_loading import import_string
+
 from valkey import Valkey
+from valkey._parsers.url_parser import to_bool
 from valkey.connection import ConnectionPool, DefaultParser
 from valkey.sentinel import Sentinel
-from valkey._parsers.url_parser import to_bool
 
 from django_valkey.base_pool import BaseConnectionFactory, Base
 
@@ -88,7 +89,6 @@ class SentinelConnectionFactory(ConnectionFactory):
 def get_connection_factory(
     path: str | None = None, options: dict | None = None
 ) -> ConnectionFactory | SentinelConnectionFactory | Any:
-
     path = getattr(settings, "DJANGO_VALKEY_CONNECTION_FACTORY", path)
     opt_conn_factory = options.get("CONNECTION_FACTORY")
     if opt_conn_factory:

@@ -1,6 +1,7 @@
 from urllib.parse import parse_qs, urlparse
 
 from django.core.exceptions import ImproperlyConfigured
+
 from valkey.asyncio.sentinel import SentinelConnectionPool
 
 from django_valkey.async_cache.client.default import AsyncDefaultClient

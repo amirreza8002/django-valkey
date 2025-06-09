@@ -1,6 +1,7 @@
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from django.core.exceptions import ImproperlyConfigured
+
 from valkey.sentinel import SentinelConnectionPool
 
 from django_valkey.client.default import DefaultClient

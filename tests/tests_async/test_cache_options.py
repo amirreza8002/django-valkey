@@ -4,8 +4,8 @@ from collections.abc import Iterable
 from typing import cast
 
 import pytest
-from pytest import LogCaptureFixture
 import pytest_asyncio
+from pytest import LogCaptureFixture
 from pytest_django.fixtures import SettingsWrapper
 
 from django.core.cache import caches, cache as default_cache
