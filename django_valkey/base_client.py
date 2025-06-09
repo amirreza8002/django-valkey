@@ -21,7 +21,11 @@ from django.core.cache.backends.base import DEFAULT_TIMEOUT, get_key_func
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.module_loading import import_string
 
-from valkey.exceptions import ConnectionError, ResponseError, TimeoutError
+from valkey.exceptions import (
+    ConnectionError as ValkeyConnectionError,
+    ResponseError,
+    TimeoutError as ValkeyTimeoutError,
+)
 from valkey.typing import AbsExpiryT, EncodableT, ExpiryT, KeyT, PatternT
 
 from django_valkey import pool
@@ -37,7 +41,12 @@ if TYPE_CHECKING:
     from django_valkey.cache import ValkeyCache
 
 
-_main_exceptions = (TimeoutError, ResponseError, ConnectionError, socket.timeout)
+_main_exceptions = (
+    ValkeyTimeoutError,
+    ResponseError,
+    ValkeyConnectionError,
+    socket.timeout,
+)
 
 special_re = re.compile("([*?[])")
 
