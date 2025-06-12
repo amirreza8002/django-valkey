@@ -1,0 +1,41 @@
+# http://editorconfig.org
+
+root = true
+
+[*]
+indent_size = 4
+indent_style = space
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.py]
+max_line_length = 88
+
+[*.{html,css,scss,json,yml,xml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.json]
+indent_size = 2
+insert_final_newline = ignore
+
+[*.min.js]
+indent_style = ignore
+indent_size = ignore
+
+[*.bat]
+indent_style = tab
+
+[docs/**.txt]
+max_line_length = 79
+
+[Makefile]
+indent_style = tab
+
+[default.conf]
+indent_size = 2
+
