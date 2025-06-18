@@ -14,7 +14,6 @@ from django_valkey.cache import ValkeyCache
 
 pytestmark = pytest.mark.anyio
 
-# for some reason `isawaitable` doesn't work here
 if iscoroutinefunction(default_cache.clear):
 
     @pytest.fixture(scope="function")
