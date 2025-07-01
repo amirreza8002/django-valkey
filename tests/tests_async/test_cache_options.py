@@ -14,7 +14,6 @@ from valkey.exceptions import ConnectionError
 from django_valkey.async_cache.cache import AsyncValkeyCache
 from django_valkey.async_cache.client import AsyncHerdClient, AsyncDefaultClient
 
-
 pytestmark = pytest.mark.anyio
 
 methods_with_no_parameters = {"clear", "close"}
@@ -77,6 +76,8 @@ no_herd_method = {
 }
 
 
+# TODO: when django adjusts the signal, remove this decorator (and the ones below)
+@pytest.mark.filterwarnings("ignore:coroutine 'AsyncBackendCommands.close'")
 class TestDjangoValkeyOmitException:
     @pytest.fixture
     async def conf_cache(self, settings: SettingsWrapper):
@@ -231,6 +232,7 @@ async def with_prefix_cache() -> Iterable[AsyncValkeyCache]:
     await with_prefix.clear()
 
 
+@pytest.mark.filterwarnings("ignore:coroutine 'AsyncBackendCommands.close'")
 class TestDjangoValkeyCacheEscapePrefix:
     async def test_delete_pattern(
         self, key_prefix_cache: AsyncValkeyCache, with_prefix_cache: AsyncValkeyCache
@@ -261,6 +263,7 @@ class TestDjangoValkeyCacheEscapePrefix:
         assert "b" not in keys
 
 
+@pytest.mark.filterwarnings("ignore:coroutine 'AsyncBackendCommands.close'")
 async def test_custom_key_function(cache: AsyncValkeyCache, settings: SettingsWrapper):
     caches_setting = copy.deepcopy(settings.CACHES)
     caches_setting["default"]["KEY_FUNCTION"] = "tests.test_cache_options.make_key"
