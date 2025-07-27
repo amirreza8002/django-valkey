@@ -20,7 +20,8 @@ class TestWithOldSignal:
         signals.request_finished.connect(close_async_caches)
 
     def test_old_receiver_is_registered_and_new_receiver_unregistered(self, setup):
-        sync_receivers, async_receivers = signals.request_finished._live_receivers(None)
+        sync_receivers, async_receivers = signals.request_finished._live_receivers(
+            None)
         assert close_caches in sync_receivers
         assert close_async_caches not in async_receivers
 
@@ -45,7 +46,8 @@ class TestWithOldSignal:
             == "coroutine 'AsyncBackendCommands.close' was never awaited"
         )
 
-    # for some reason if i make this function sync, it can't get the log
+    # TODO: find why garbage collector doesn't collect the coroutine when the method is
+    # sync (even when gc is called manually, it doesn't collect)
     async def test_manually_call_signal(self):
         with pytest.warns(
             RuntimeWarning,
@@ -75,7 +77,8 @@ class TestWithNewSignal:
         assert len(recwarn) == 0
 
     def test_receiver_is_registered_and_old_receiver_unregistered(self):
-        sync_receivers, async_receivers = signals.request_finished._live_receivers(None)
+        sync_receivers, async_receivers = signals.request_finished._live_receivers(
+            None)
         assert close_async_caches in async_receivers
         assert close_caches not in sync_receivers
 
