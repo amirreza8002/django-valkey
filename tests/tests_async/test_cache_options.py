@@ -4,7 +4,6 @@ from collections.abc import Iterable
 from typing import cast
 
 import pytest
-import pytest_asyncio
 from pytest import LogCaptureFixture
 from pytest_django.fixtures import SettingsWrapper
 
@@ -14,6 +13,8 @@ from valkey.exceptions import ConnectionError
 
 from django_valkey.async_cache.cache import AsyncValkeyCache
 from django_valkey.async_cache.client import AsyncHerdClient, AsyncDefaultClient
+
+pytestmark = pytest.mark.anyio
 
 methods_with_no_parameters = {"clear", "close"}
 
@@ -75,15 +76,19 @@ no_herd_method = {
 }
 
 
-@pytest.mark.asyncio(loop_scope="session")
+# TODO: when django adjusts the signal, remove this decorator (and the ones below)
+@pytest.mark.filterwarnings("ignore:coroutine 'AsyncBackendCommands.close'")
 class TestDjangoValkeyOmitException:
-    @pytest_asyncio.fixture
+    @pytest.fixture
     async def conf_cache(self, settings: SettingsWrapper):
         caches_settings = copy.deepcopy(settings.CACHES)
+        # NOTE: this files raises RuntimeWarning because `conn.close` was not awaited,
+        # this is expected because django calls the signal manually during this test
+        # to debug, put a `raise` in django.utils.connection.BaseConnectionHandler.close_all
         settings.CACHES = caches_settings
         return caches_settings
 
-    @pytest_asyncio.fixture
+    @pytest.fixture
     async def conf_cache_to_ignore_exception(
         self, settings: SettingsWrapper, conf_cache
     ):
@@ -92,7 +97,7 @@ class TestDjangoValkeyOmitException:
         settings.DJANGO_VALKEY_IGNORE_EXCEPTIONS = True
         settings.DJANGO_VALKEY_LOG_IGNORE_EXCEPTIONS = True
 
-    @pytest_asyncio.fixture
+    @pytest.fixture
     async def ignore_exceptions_cache(
         self, conf_cache_to_ignore_exception
     ) -> AsyncValkeyCache:
@@ -210,7 +215,7 @@ class TestDjangoValkeyOmitException:
             await cache.get("key")
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def key_prefix_cache(
     cache: AsyncValkeyCache, settings: SettingsWrapper
 ) -> Iterable[AsyncValkeyCache]:
@@ -220,14 +225,14 @@ async def key_prefix_cache(
     yield cache
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def with_prefix_cache() -> Iterable[AsyncValkeyCache]:
     with_prefix = cast(AsyncValkeyCache, caches["with_prefix"])
     yield with_prefix
     await with_prefix.clear()
 
 
-@pytest.mark.asyncio(loop_scope="session")
+@pytest.mark.filterwarnings("ignore:coroutine 'AsyncBackendCommands.close'")
 class TestDjangoValkeyCacheEscapePrefix:
     async def test_delete_pattern(
         self, key_prefix_cache: AsyncValkeyCache, with_prefix_cache: AsyncValkeyCache
@@ -258,7 +263,7 @@ class TestDjangoValkeyCacheEscapePrefix:
         assert "b" not in keys
 
 
-@pytest.mark.asyncio(loop_scope="session")
+@pytest.mark.filterwarnings("ignore:coroutine 'AsyncBackendCommands.close'")
 async def test_custom_key_function(cache: AsyncValkeyCache, settings: SettingsWrapper):
     caches_setting = copy.deepcopy(settings.CACHES)
     caches_setting["default"]["KEY_FUNCTION"] = "tests.test_cache_options.make_key"

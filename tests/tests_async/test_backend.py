@@ -1,4 +1,3 @@
-import asyncio
 import contextlib
 import datetime
 import threading
@@ -8,9 +7,10 @@ from typing import List, cast
 from unittest.mock import patch, AsyncMock
 
 import pytest
-import pytest_asyncio
 from pytest_django.fixtures import SettingsWrapper
 from pytest_mock import MockerFixture
+
+import anyio
 
 from django.core.cache import caches
 from django.core.cache.backends.base import DEFAULT_TIMEOUT
@@ -22,7 +22,10 @@ from django_valkey.serializers.json import JSONSerializer
 from django_valkey.serializers.msgpack import MSGPackSerializer
 
 
-@pytest_asyncio.fixture(loop_scope="session")
+pytestmark = pytest.mark.anyio
+
+
+@pytest.fixture
 async def patch_itersize_setting() -> Iterable[None]:
     del caches["default"]
     with override_settings(DJANGO_VALKEY_SCAN_ITERSIZE=30):
@@ -31,7 +34,6 @@ async def patch_itersize_setting() -> Iterable[None]:
     del caches["default"]
 
 
-@pytest.mark.asyncio(loop_scope="session")
 class TestAsyncDjangoValkeyCache:
     async def test_set_int(self, cache: AsyncValkeyCache):
         if isinstance(cache.client, AsyncHerdClient):
@@ -72,7 +74,7 @@ class TestAsyncDjangoValkeyCache:
         # test that timeout still works for nx=True
         res = await cache.aset("test_key_nx", 1, timeout=2, nx=True)
         assert res is True
-        await asyncio.sleep(3)
+        await anyio.sleep(3)
         res = await cache.aget("test_key_nx")
         assert res is None
 
@@ -80,7 +82,7 @@ class TestAsyncDjangoValkeyCache:
         await cache.aset("test_key_nx", 1)
         res = await cache.aset("test_key_nx", 2, timeout=2, nx=True)
         assert res is None
-        await asyncio.sleep(3)
+        await anyio.sleep(3)
         res = await cache.aget("test_key_nx")
         assert res == 1
 
@@ -151,7 +153,7 @@ class TestAsyncDjangoValkeyCache:
 
     async def test_timeout(self, cache: AsyncValkeyCache):
         await cache.aset("test_key", 222, timeout=3)
-        await asyncio.sleep(4)
+        await anyio.sleep(4)
 
         res = await cache.aget("test_key")
         assert res is None
@@ -170,7 +172,7 @@ class TestAsyncDjangoValkeyCache:
 
         await cache.aset("test_key", 222, 1)
         res1 = await cache.aget("test_key")
-        await asyncio.sleep(2)
+        await anyio.sleep(2)
         res2 = await cache.aget("test_key")
         assert res1 == 222
         assert res2 is None
@@ -731,7 +733,7 @@ class TestAsyncDjangoValkeyCache:
         async def release_lock(lock_):
             await lock_.release()
 
-        t = threading.Thread(target=asyncio.run, args=[release_lock(lock)])
+        t = threading.Thread(target=anyio.run, args=[release_lock, lock])
         t.start()
         t.join()
 
@@ -801,7 +803,7 @@ class TestAsyncDjangoValkeyCache:
 
         assert await cache.atouch("test_key", 2) is True
         assert await cache.aget("test_key") == 222
-        await asyncio.sleep(3)
+        await anyio.sleep(3)
         assert await cache.aget("test_key") is None
 
     async def test_touch_negative_timeout(self, cache: AsyncValkeyCache):
@@ -819,7 +821,7 @@ class TestAsyncDjangoValkeyCache:
         result = await cache.atouch("test_key", None)
         assert result is True
         assert await cache.attl("test_key") is None
-        await asyncio.sleep(2)
+        await anyio.sleep(2)
         assert await cache.aget("test_key") == "foo"
 
     async def test_touch_forever_nonexistent(self, cache: AsyncValkeyCache):
@@ -830,7 +832,7 @@ class TestAsyncDjangoValkeyCache:
         await cache.aset("test_key", "foo", timeout=1)
         result = await cache.atouch("test_key")
         assert result is True
-        await asyncio.sleep(2)
+        await anyio.sleep(2)
         assert await cache.aget("test_key") == "foo"
 
     async def test_clear(self, cache: AsyncValkeyCache):
