@@ -267,9 +267,9 @@ class TestDjangoValkeyCacheEscapePrefix:
 async def test_custom_key_function(cache: AsyncValkeyCache, settings: SettingsWrapper):
     caches_setting = copy.deepcopy(settings.CACHES)
     caches_setting["default"]["KEY_FUNCTION"] = "tests.test_cache_options.make_key"
-    caches_setting["default"][
-        "REVERSE_KEY_FUNCTION"
-    ] = "tests.test_cache_options.reverse_key"
+    caches_setting["default"]["REVERSE_KEY_FUNCTION"] = (
+        "tests.test_cache_options.reverse_key"
+    )
     settings.CACHES = caches_setting
 
     for key in ["foo-aa", "foo-ab", "foo-bb", "foo-bc"]:

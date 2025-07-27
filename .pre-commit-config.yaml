@@ -3,14 +3,10 @@ repos:
     rev: 1.25.0
     hooks:
       - id: django-upgrade
-        args: [--target-version, "5.1"]
-  
-  - repo: https://github.com/psf/black
-    rev: 25.1.0
-    hooks:
-      - id: black
+        args: [--target-version, "5.2"]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.12.4
     hooks:
-      - id: ruff
+      - id: ruff-check
+      - id: ruff-format
