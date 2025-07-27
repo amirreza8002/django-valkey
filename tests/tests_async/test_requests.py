@@ -20,8 +20,7 @@ class TestWithOldSignal:
         signals.request_finished.connect(close_async_caches)
 
     def test_old_receiver_is_registered_and_new_receiver_unregistered(self, setup):
-        sync_receivers, async_receivers = signals.request_finished._live_receivers(
-            None)
+        sync_receivers, async_receivers = signals.request_finished._live_receivers(None)
         assert close_caches in sync_receivers
         assert close_async_caches not in async_receivers
 
@@ -77,8 +76,7 @@ class TestWithNewSignal:
         assert len(recwarn) == 0
 
     def test_receiver_is_registered_and_old_receiver_unregistered(self):
-        sync_receivers, async_receivers = signals.request_finished._live_receivers(
-            None)
+        sync_receivers, async_receivers = signals.request_finished._live_receivers(None)
         assert close_async_caches in async_receivers
         assert close_caches not in sync_receivers
 
