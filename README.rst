@@ -36,6 +36,7 @@ Why use django-valkey?
 
 - Valkey is a free licenced and well maintained key/value database
 - Uses native valkey-py url notation connection strings
+- async support
 - Pluggable clients
 - Pluggable parsers
 - Pluggable serializers
@@ -50,10 +51,10 @@ Why use django-valkey?
 Requirements
 ~~~~~~~~~~~~
 
-- `Python`_ 3.10+  (if you use with libvalkey, they don't support 3.13 yet)
+- `Python`_ 3.10+
 - `Django`_ 4.2.20+
-- `valkey-py`_ 6.0.2+ (probably works on older versions too)
-- `Valkey server`_ 7.2.6+ (probably works with older versions too)
+- `valkey-py`_ 6.0.2+
+- `Valkey server`_ 7.2.6+
 
 .. _Python: https://www.python.org/downloads/
 .. _Django: https://www.djangoproject.com/download/
@@ -111,7 +112,6 @@ Todo
 
 1. Fix the CI in cluster branch.
 2. Add cluster to documentations.
-3. Refactor cluster branch.
 
 License
 -------
