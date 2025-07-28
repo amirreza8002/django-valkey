@@ -4,7 +4,6 @@ import time
 from collections.abc import Iterable
 from datetime import timedelta
 from typing import List, cast
-from unittest.mock import patch
 
 import pytest
 from pytest_django.fixtures import SettingsWrapper
@@ -285,6 +284,7 @@ class TestDjangoValkeyCache:
         value = "value"
 
         mocked_set = mocker.patch.object(pipeline, "set")
+
         cache.set(key, value, client=pipeline)
 
         if isinstance(cache.client, herd.HerdClient):
@@ -552,8 +552,9 @@ class TestDjangoValkeyCache:
         res = cache.delete_pattern("*foo-a*")
         assert bool(res) is False
 
-    @patch("django_valkey.cache.ValkeyCache.client")
-    def test_delete_pattern_with_custom_count(self, client_mock, cache: ValkeyCache):
+    def test_delete_pattern_with_custom_count(self, cache: ValkeyCache, mocker):
+        client_mock = mocker.patch("django_valkey.cache.ValkeyCache.client")
+
         if isinstance(cache.client, DefaultClusterClient):
             pytest.skip("cluster client has a specific test")
 
@@ -564,14 +565,15 @@ class TestDjangoValkeyCache:
 
         client_mock.delete_pattern.assert_called_once_with("*foo-a*", itersize=2)
 
-    @patch("django_valkey.cache.ValkeyCache.client")
     def test_delete_pattern_with_settings_default_scan_count(
         self,
-        client_mock,
         patch_itersize_setting,
         cache: ValkeyCache,
         settings: SettingsWrapper,
+        mocker,
     ):
+        client_mock = mocker.patch("django_valkey.cache.ValkeyCache.client")
+
         if isinstance(cache.client, DefaultClusterClient):
             pytest.skip("cluster client has a specific test")
 
@@ -592,6 +594,7 @@ class TestDjangoValkeyCache:
 
     def test_close_client(self, cache: ValkeyCache, mocker: MockerFixture):
         mock = mocker.patch.object(cache.client, "close")
+
         cache.close()
         assert mock.called
 

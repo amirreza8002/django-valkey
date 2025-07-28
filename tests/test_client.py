@@ -1,5 +1,4 @@
 from collections.abc import Iterable
-from unittest.mock import Mock, call, patch
 
 import pytest
 from pytest_django.fixtures import SettingsWrapper
@@ -24,6 +23,7 @@ class TestClientClose:
         self, cache_client: DefaultClient, mocker: MockerFixture
     ):
         mock = mocker.patch.object(cache_client.connection_factory, "disconnect")
+
         cache_client.close()
         assert not mock.called
 
@@ -33,8 +33,9 @@ class TestClientClose:
         settings: SettingsWrapper,
         mocker: MockerFixture,
     ):
-        settings.DJANGO_VALKEY_CLOSE_CONNECTION = True
         mock = mocker.patch.object(cache_client.connection_factory, "disconnect")
+
+        settings.DJANGO_VALKEY_CLOSE_CONNECTION = True
         cache_client.close()
         assert mock.called
 
@@ -44,17 +45,21 @@ class TestClientClose:
         mocker: MockerFixture,
         settings: SettingsWrapper,
     ):
+        mock = mocker.patch.object(cache_client.connection_factory, "disconnect")
+
         settings.CACHES[DEFAULT_CACHE_ALIAS]["OPTIONS"]["CLOSE_CONNECTION"] = True
         cache_client.set("TestClientClose", 0)
-        mock = mocker.patch.object(cache_client.connection_factory, "disconnect")
+
         cache_client.close()
         assert mock.called
 
     def test_close_disconnect_client_options(
         self, cache_client: DefaultClient, mocker: MockerFixture
     ):
-        cache_client._options["CLOSE_CONNECTION"] = True
         mock = mocker.patch.object(cache_client.connection_factory, "disconnect")
+
+        cache_client._options["CLOSE_CONNECTION"] = True
+
         cache_client.close()
         assert mock.called
 
@@ -63,26 +68,29 @@ class TestClientClose:
     not isinstance(default_cache.client, DefaultClient), reason="shard only test"
 )
 class TestDefaultClient:
-    @patch("django_valkey.base_client.ClientCommands.get_client")
-    @patch("django_valkey.base_client.BaseClient.__init__", return_value=None)
-    def test_delete_pattern_calls_get_client_given_no_client(
-        self, init_mock, get_client_mock
-    ):
+    def test_delete_pattern_calls_get_client_given_no_client(self, mocker):
+        get_client_mock = mocker.patch(
+            "django_valkey.base_client.ClientCommands.get_client"
+        )
+        mocker.patch("django_valkey.base_client.BaseClient.__init__", return_value=None)
         client = DefaultClient()
-        client._backend = Mock()
+        client._backend = mocker.Mock()
         client._backend.key_prefix = ""
 
         client.delete_pattern(pattern="foo*")
         get_client_mock.assert_called_once_with(write=True, tried=None)
 
-    @patch("django_valkey.base_client.BaseClient.make_pattern")
-    @patch("django_valkey.base_client.ClientCommands.get_client", return_value=Mock())
-    @patch("django_valkey.base_client.BaseClient.__init__", return_value=None)
-    def test_delete_pattern_calls_make_pattern(
-        self, init_mock, get_client_mock, make_pattern_mock
-    ):
+    def test_delete_pattern_calls_make_pattern(self, mocker):
+        make_pattern_mock = mocker.patch(
+            "django_valkey.base_client.BaseClient.make_pattern"
+        )
+        get_client_mock = mocker.patch(
+            "django_valkey.base_client.ClientCommands.get_client",
+            return_value=mocker.Mock(),
+        )
+        mocker.patch("django_valkey.base_client.BaseClient.__init__", return_value=None)
         client = DefaultClient()
-        client._backend = Mock()
+        client._backend = mocker.Mock()
         client._backend.key_prefix = ""
         get_client_mock.return_value.scan_iter.return_value = []
 
@@ -91,14 +99,17 @@ class TestDefaultClient:
         kwargs = {"version": None, "prefix": None}
         make_pattern_mock.assert_called_once_with("foo*", **kwargs)
 
-    @patch("django_valkey.base_client.BaseClient.make_pattern")
-    @patch("django_valkey.base_client.ClientCommands.get_client", return_value=Mock())
-    @patch("django_valkey.base_client.BaseClient.__init__", return_value=None)
-    def test_delete_pattern_calls_scan_iter_with_count_if_itersize_given(
-        self, init_mock, get_client_mock, make_pattern_mock
-    ):
+    def test_delete_pattern_calls_scan_iter_with_count_if_itersize_given(self, mocker):
+        mocker.patch("django_valkey.base_client.BaseClient.__init__", return_value=None)
+        get_client_mock = mocker.patch(
+            "django_valkey.base_client.ClientCommands.get_client",
+            return_value=mocker.Mock(),
+        )
+        make_pattern_mock = mocker.patch(
+            "django_valkey.base_client.BaseClient.make_pattern"
+        )
         client = DefaultClient()
-        client._backend = Mock()
+        client._backend = mocker.Mock()
         client._backend.key_prefix = ""
         get_client_mock.return_value.scan_iter.return_value = []
 
@@ -108,25 +119,26 @@ class TestDefaultClient:
             count=90210, match=make_pattern_mock.return_value
         )
 
-    @patch("django_valkey.base_client.BaseClient.make_pattern")
-    @patch("django_valkey.base_client.ClientCommands.get_client", return_value=Mock())
-    @patch("django_valkey.base_client.BaseClient.__init__", return_value=None)
-    def test_delete_pattern_calls_pipeline_delete_and_execute(
-        self, init_mock, get_client_mock, make_pattern_mock
-    ):
+    def test_delete_pattern_calls_pipeline_delete_and_execute(self, mocker):
+        mocker.patch("django_valkey.base_client.BaseClient.__init__", return_value=None)
+        get_client_mock = mocker.patch(
+            "django_valkey.base_client.ClientCommands.get_client",
+            return_value=mocker.Mock(),
+        )
+        mocker.patch("django_valkey.base_client.BaseClient.make_pattern")
         client = DefaultClient()
-        client._backend = Mock()
+        client._backend = mocker.Mock()
         client._backend.key_prefix = ""
         get_client_mock.return_value.scan_iter.return_value = [":1:foo", ":1:foo-a"]
-        get_client_mock.return_value.pipeline.return_value = Mock()
-        get_client_mock.return_value.pipeline.return_value.delete = Mock()
-        get_client_mock.return_value.pipeline.return_value.execute = Mock()
+        get_client_mock.return_value.pipeline.return_value = mocker.Mock()
+        get_client_mock.return_value.pipeline.return_value.delete = mocker.Mock()
+        get_client_mock.return_value.pipeline.return_value.execute = mocker.Mock()
 
         client.delete_pattern(pattern="foo*")
 
         assert get_client_mock.return_value.pipeline.return_value.delete.call_count == 2
         get_client_mock.return_value.pipeline.return_value.delete.assert_has_calls(
-            [call(":1:foo"), call(":1:foo-a")]
+            [mocker.call(":1:foo"), mocker.call(":1:foo-a")]
         )
         get_client_mock.return_value.pipeline.return_value.execute.assert_called_once()
 
@@ -158,6 +170,7 @@ class TestShardClient:
     @pytest.fixture
     def connection(self, mocker):
         connection = mocker.Mock()
+
         for m in self.CLIENT_METHODS_FOR_MOCK:
             setattr(connection, m, mocker.Mock(spec_set=()))
 
@@ -173,16 +186,17 @@ class TestShardClient:
 
         yield connection
 
-    @patch("django_valkey.base_client.BaseClient.make_pattern")
-    @patch("django_valkey.client.sharded.ShardClient.__init__", return_value=None)
     def test_delete_pattern_calls_scan_iter_with_count_if_itersize_given(
-        self,
-        init_mock,
-        make_pattern_mock,
-        connection,
+        self, connection, mocker
     ):
+        mocker.patch(
+            "django_valkey.client.sharded.ShardClient.__init__", return_value=None
+        )
+        make_pattern_mock = mocker.patch(
+            "django_valkey.base_client.BaseClient.make_pattern"
+        )
         client = ShardClient()
-        client._backend = Mock()
+        client._backend = mocker.Mock()
         client._backend.key_prefix = ""
 
         client._server_dict = {"test": connection}
@@ -193,13 +207,15 @@ class TestShardClient:
             count=10, match=make_pattern_mock.return_value
         )
 
-    @patch("tests.test_client.ShardClient.make_pattern")
-    @patch("tests.test_client.ShardClient.__init__", return_value=None)
-    def test_delete_pattern_calls_scan_iter(
-        self, init_mock, make_pattern_mock, connection
-    ):
+    def test_delete_pattern_calls_scan_iter(self, connection, mocker):
+        mocker.patch(
+            "django_valkey.client.sharded.ShardClient.__init__", return_value=None
+        )
+        make_pattern_mock = mocker.patch(
+            "django_valkey.base_client.BaseClient.make_pattern"
+        )
         client = ShardClient()
-        client._backend = Mock()
+        client._backend = mocker.Mock()
         client._backend.key_prefix = ""
         client._server_dict = {"test": connection}
 
@@ -209,15 +225,17 @@ class TestShardClient:
             match=make_pattern_mock.return_value
         )
 
-    @patch("tests.test_client.ShardClient.make_pattern")
-    @patch("tests.test_client.ShardClient.__init__", return_value=None)
     def test_delete_pattern_calls_delete_for_given_keys(
-        self, init_mock, make_pattern_mock, connection, cache
+        self, connection, cache, mocker
     ):
+        mocker.patch(
+            "django_valkey.client.sharded.ShardClient.__init__", return_value=None
+        )
+        mocker.patch("django_valkey.base_client.BaseClient.make_pattern")
         client = ShardClient()
-        client._backend = Mock()
+        client._backend = mocker.Mock()
         client._backend.key_prefix = ""
-        connection.scan_iter.return_value = [Mock(), Mock()]
+        connection.scan_iter.return_value = [mocker.Mock(), mocker.Mock()]
         connection.delete.return_value = 0
         client._server_dict = {"test": connection}
 
