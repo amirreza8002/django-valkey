@@ -4,7 +4,6 @@ import threading
 from collections.abc import Iterable
 from datetime import timedelta
 from typing import List, cast
-from unittest.mock import patch, AsyncMock
 
 import pytest
 from pytest_django.fixtures import SettingsWrapper
@@ -267,7 +266,8 @@ class TestAsyncDjangoValkeyCache:
         key = "key"
         value = "value"
 
-        mocked_set = mocker.patch.object(pipeline, "set", AsyncMock())
+        mocked_set = mocker.patch.object(pipeline, "set", mocker.AsyncMock())
+
         await cache.aset(key, value, client=pipeline)
 
         if isinstance(cache.client, AsyncHerdClient):
@@ -529,13 +529,14 @@ class TestAsyncDjangoValkeyCache:
         res = await cache.adelete_pattern("*foo-a*")
         assert bool(res) is False
 
-    @patch(
-        "django_valkey.async_cache.cache.AsyncValkeyCache.client",
-        new_callable=AsyncMock,
-    )
     async def test_delete_pattern_with_custom_count(
-        self, client_mock, cache: AsyncValkeyCache
+        self, cache: AsyncValkeyCache, mocker
     ):
+        client_mock = mocker.patch(
+            "django_valkey.async_cache.cache.AsyncValkeyCache.client",
+            new_callable=mocker.AsyncMock,
+        )
+
         for key in ["foo-aa", "foo-ab", "foo-bb", "foo-bc"]:
             await cache.aset(key, "foo")
 
@@ -543,17 +544,18 @@ class TestAsyncDjangoValkeyCache:
 
         client_mock.adelete_pattern.assert_awaited_once_with("*foo-a*", itersize=2)
 
-    @patch(
-        "django_valkey.async_cache.cache.AsyncValkeyCache.client",
-        new_callable=AsyncMock,
-    )
     async def test_delete_pattern_with_settings_default_scan_count(
         self,
-        client_mock,
         patch_itersize_setting,
         cache: AsyncValkeyCache,
         settings: SettingsWrapper,
+        mocker,
     ):
+        client_mock = mocker.patch(
+            "django_valkey.async_cache.cache.AsyncValkeyCache.client",
+            new_callable=mocker.AsyncMock,
+        )
+
         for key in ["foo-aa", "foo-ab", "foo-bb", "foo-bc"]:
             await cache.aset(key, "foo")
         expected_count = settings.DJANGO_VALKEY_SCAN_ITERSIZE
@@ -571,6 +573,7 @@ class TestAsyncDjangoValkeyCache:
 
     async def test_close_client(self, cache: AsyncValkeyCache, mocker: MockerFixture):
         mock = mocker.patch.object(cache.client, "close")
+
         await cache.close()
         assert mock.called
 

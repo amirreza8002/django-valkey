@@ -12,7 +12,8 @@ from django.core.cache import caches
 from django.test import override_settings
 from django.utils import timezone
 
-from django_valkey.cache import ValkeyCache
+
+pytestmark = pytest.mark.anyio
 
 SessionType = Type[SessionBase]
 
@@ -27,165 +28,168 @@ class SessionTestsMixin:
     backend: Optional[SessionType] = None  # subclasses must specify
 
     @pytest.fixture(autouse=True)
-    def setup(self):
+    async def setup(self):
         self.session = self.backend()
         yield
-        self.session.delete()
+        await self.session.adelete()
 
     def test_new_session(self):
         assert self.session.modified is False
         assert self.session.accessed is False
 
-    def test_get_empty(self):
-        assert self.session.get("cat") is None
+    async def test_get_empty(self):
+        assert await self.session.aget("cat") is None
 
-    def test_store(self):
-        self.session["cat"] = "dog"
+    async def test_store(self):
+        await self.session.aset("cat", "dog")
         assert self.session.modified is True
-        assert self.session.pop("cat") == "dog"
+        assert await self.session.apop("cat") == "dog"
 
-    def test_pop(self):
-        self.session["some key"] = "exists"
+    async def test_pop(self):
+        await self.session.aset("some key", "exists")
         # Need to reset these to pretend we haven't accessed it:
         self.accessed = False
         self.modified = False
 
-        assert self.session.pop("some key") == "exists"
+        assert await self.session.apop("some key") == "exists"
         assert self.session.accessed is True
         assert self.session.modified is True
-        assert self.session.get("some key") is None
+        assert await self.session.aget("some key") is None
 
-    def test_pop_default(self):
-        assert self.session.pop("some key", "does not exist") == "does not exist"
+    async def test_pop_default(self):
+        assert await self.session.apop("some key", "does not exist") == "does not exist"
         assert self.session.accessed is True
         assert self.session.modified is False
 
-    def test_pop_default_named_argument(self):
+    async def test_pop_default_named_argument(self):
         assert (
-            self.session.pop("some key", default="does not exist") == "does not exist"
+            await self.session.apop("some key", default="does not exist")
+            == "does not exist"
         )
         assert self.session.accessed is True
         assert self.session.modified is False
 
-    def test_pop_no_default_keyerror_raised(self):
+    async def test_pop_no_default_keyerror_raised(self):
         with pytest.raises(KeyError):
-            self.session.pop("some key")
+            await self.session.apop("some key")
 
-    def test_setdefault(self):
-        assert self.session.setdefault("foo", "bar") == "bar"
-        assert self.session.setdefault("foo", "baz") == "bar"
+    async def test_setdefault(self):
+        assert await self.session.asetdefault("foo", "bar") == "bar"
+        assert await self.session.asetdefault("foo", "baz") == "bar"
         assert self.session.accessed is True
         assert self.session.modified is True
 
-    def test_update(self):
-        self.session.update({"update key": 1})
+    async def test_update(self):
+        await self.session.aupdate({"update key": 1})
         assert self.session.accessed is True
         assert self.session.modified is True
-        assert self.session.get("update key") == 1
+        assert await self.session.aget("update key") == 1
 
-    def test_has_key(self):
-        self.session["some key"] = 1
+    async def test_has_key(self):
+        await self.session.aset("some key", 1)
         self.session.modified = False
         self.session.accessed = False
 
-        assert "some key" in self.session
+        assert await self.session.ahas_key("some key")
         assert self.session.accessed is True
         assert self.session.modified is False
 
-    def test_values(self):
-        assert list(self.session.values()) == []
+    async def test_values(self):
+        assert list(await self.session.avalues()) == []
         assert self.session.accessed is True
-        self.session["some key"] = 1
+        await self.session.aset("some key", 1)
         self.session.modified = False
         self.session.accessed = False
-        assert list(self.session.values()) == [1]
-        assert self.session.accessed is True
-        assert self.session.modified is False
-
-    def test_keys(self):
-        self.session["x"] = 1
-        self.session.modified = False
-        self.session.accessed = False
-        assert list(self.session.keys()) == ["x"]
+        assert list(await self.session.avalues()) == [1]
         assert self.session.accessed is True
         assert self.session.modified is False
 
-    def test_items(self):
-        self.session["x"] = 1
+    async def test_keys(self):
+        await self.session.aset("x", 1)
         self.session.modified = False
         self.session.accessed = False
-        assert list(self.session.items()) == [("x", 1)]
+        assert list(await self.session.akeys()) == ["x"]
         assert self.session.accessed is True
         assert self.session.modified is False
 
-    def test_clear(self):
-        self.session["x"] = 1
+    async def test_items(self):
+        await self.session.aset("x", 1)
         self.session.modified = False
         self.session.accessed = False
-        assert list(self.session.items()) == [("x", 1)]
+        assert list(await self.session.aitems()) == [("x", 1)]
+        assert self.session.accessed is True
+        assert self.session.modified is False
+
+    async def test_clear(self):
+        await self.session.aset("x", 1)
+        self.session.modified = False
+        self.session.accessed = False
+        assert list(await self.session.aitems()) == [("x", 1)]
         self.session.clear()
-        assert list(self.session.items()) == []
+        assert list(await self.session.aitems()) == []
         assert self.session.accessed is True
         assert self.session.modified is True
 
-    def test_save(self):
-        self.session.save()
-        assert self.session.exists(self.session.session_key)
+    async def test_save(self):
+        await self.session.asave()
+        assert await self.session.aexists(self.session.session_key)
 
-    def test_delete(self):
-        self.session.save()
-        self.session.delete(self.session.session_key)
-        assert not self.session.exists(self.session.session_key)
+    async def test_delete(self):
+        await self.session.asave()
+        await self.session.adelete(self.session.session_key)
+        assert not await self.session.aexists(self.session.session_key)
 
-    def test_flush(self):
-        self.session["foo"] = "bar"
-        self.session.save()
+    async def test_flush(self):
+        await self.session.aset("foo", "bar")
+        await self.session.asave()
         prev_key = self.session.session_key
-        self.session.flush()
-        assert not self.session.exists(prev_key)
+        await self.session.aflush()
+        assert not await self.session.aexists(prev_key)
         assert self.session.session_key != prev_key
         assert self.session.session_key is None
         assert self.session.accessed is True
         assert self.session.modified is True
 
-    def test_cycle(self):
-        self.session["a"], self.session["b"] = "c", "d"
-        self.session.save()
+    async def test_cycle(self):
+        await self.session.aset("a", "c")
+        await self.session.aset("b", "d")
+        await self.session.asave()
         prev_key = self.session.session_key
-        prev_data = list(self.session.items())
-        self.session.cycle_key()
-        assert not self.session.exists(prev_key)
+        prev_data = list(await self.session.aitems())
+        await self.session.acycle_key()
+        assert not await self.session.aexists(prev_key)
         assert self.session.session_key != prev_key
-        assert list(self.session.items()) == prev_data
+        assert list(await self.session.aitems()) == prev_data
 
-    def test_cycle_with_no_session_cache(self):
-        self.session["a"], self.session["b"] = "c", "d"
-        self.session.save()
-        prev_data = self.session.items()
+    async def test_cycle_with_no_session_cache(self):
+        await self.session.aset("a", "c")
+        await self.session.aset("b", "d")
+        await self.session.asave()
+        prev_data = await self.session.aitems()
         self.session = self.backend(self.session.session_key)
 
         assert not hasattr(self.session, "_session_cache")
-        self.session.cycle_key()
-        assert self.session.items() == prev_data
+        await self.session.acycle_key()
+        assert await self.session.aitems() == prev_data
 
-    def test_save_doesnt_clear_data(self):
-        self.session["a"] = "b"
-        self.session.save()
-        assert self.session["a"] == "b"
+    async def test_save_doesnt_clear_data(self):
+        await self.session.aset("a", "b")
+        await self.session.asave()
+        assert await self.session.aget("a") == "b"
 
-    def test_invalid_key(self):
+    async def test_invalid_key(self):
         # Submitting an invalid session key (either by guessing, or if the db has
         # removed the key) results in a new key being generated.
         try:
             session = self.backend("1")
-            session.save()
+            await session.asave()
             assert session.session_key != "1"
-            assert not self.session.get("cat")
-            session.delete()
+            assert not await self.session.aget("cat")
+            await session.adelete()
         finally:
             # Some backends leave a stale cache entry for the invalid
             # session key; make sure that entry is manually deleted
-            session.delete("1")
+            await session.adelete("1")
 
     def test_session_key_empty_string_invalid(self):
         """Falsey values (Such as an empty string) are rejected."""
@@ -202,90 +206,90 @@ class SessionTestsMixin:
         self.session._session_key = "12345678"
         assert self.session.session_key == "12345678"
 
-    def test_session_key_is_read_only(self):
-        def set_session_key(session):
-            session.session_key = session._get_new_session_key()
+    async def test_session_key_is_read_only(self):
+        async def set_session_key(session):
+            session.session_key = await session._aget_new_session_key()
 
         with pytest.raises(AttributeError):
-            set_session_key(self.session)
+            await set_session_key(self.session)
 
     # Custom session expiry
-    def test_default_expiry(self):
+    async def test_default_expiry(self):
         # A normal session has a max age equal to settings
-        assert self.session.get_expiry_age() == settings.SESSION_COOKIE_AGE
+        assert await self.session.aget_expiry_age() == settings.SESSION_COOKIE_AGE
 
         # So does a custom session with an idle expiration time of 0 (but it'll
         # expire at browser close)
-        self.session.set_expiry(0)
-        assert self.session.get_expiry_age() == settings.SESSION_COOKIE_AGE
+        await self.session.aset_expiry(0)
+        assert await self.session.aget_expiry_age() == settings.SESSION_COOKIE_AGE
 
-    def test_custom_expiry_seconds(self):
+    async def test_custom_expiry_seconds(self):
         modification = timezone.now()
 
-        self.session.set_expiry(10)
+        await self.session.aset_expiry(10)
 
-        date = self.session.get_expiry_date(modification=modification)
+        date = await self.session.aget_expiry_date(modification=modification)
         assert date == modification + timedelta(seconds=10)
 
-        age = self.session.get_expiry_age(modification=modification)
+        age = await self.session.aget_expiry_age(modification=modification)
         assert age == 10
 
-    def test_custom_expiry_timedelta(self):
+    async def test_custom_expiry_timedelta(self):
         modification = timezone.now()
 
         # Mock timezone.now, because set_expiry calls it on this code path.
         original_now = timezone.now
         try:
             timezone.now = lambda: modification
-            self.session.set_expiry(timedelta(seconds=10))
+            await self.session.aset_expiry(timedelta(seconds=10))
         finally:
             timezone.now = original_now
 
-        date = self.session.get_expiry_date(modification=modification)
+        date = await self.session.aget_expiry_date(modification=modification)
         assert date == modification + timedelta(seconds=10)
 
-        age = self.session.get_expiry_age(modification=modification)
+        age = await self.session.aget_expiry_age(modification=modification)
         assert age == 10
 
-    def test_custom_expiry_datetime(self):
+    async def test_custom_expiry_datetime(self):
         modification = timezone.now()
 
-        self.session.set_expiry(modification + timedelta(seconds=10))
+        await self.session.aset_expiry(modification + timedelta(seconds=10))
 
-        date = self.session.get_expiry_date(modification=modification)
+        date = await self.session.aget_expiry_date(modification=modification)
         assert date == modification + timedelta(seconds=10)
 
-        age = self.session.get_expiry_age(modification=modification)
+        age = await self.session.aget_expiry_age(modification=modification)
         assert age == 10
 
-    def test_custom_expiry_reset(self):
-        self.session.set_expiry(None)
-        self.session.set_expiry(10)
-        self.session.set_expiry(None)
-        assert self.session.get_expiry_age() == settings.SESSION_COOKIE_AGE
+    async def test_custom_expiry_reset(self):
+        await self.session.aset_expiry(None)
+        await self.session.aset_expiry(10)
+        await self.session.aset_expiry(None)
+        assert await self.session.aget_expiry_age() == settings.SESSION_COOKIE_AGE
 
-    def test_get_expire_at_browser_close(self):
+    async def test_get_expire_at_browser_close(self):
         # Tests get_expire_at_browser_close with different settings and different
         # set_expiry calls
         with override_settings(SESSION_EXPIRE_AT_BROWSER_CLOSE=False):
-            self.session.set_expiry(10)
-            assert self.session.get_expire_at_browser_close() is False
+            await self.session.aset_expiry(10)
+            assert await self.session.aget_expire_at_browser_close() is False
 
-            self.session.set_expiry(0)
-            assert self.session.get_expire_at_browser_close() is True
+            await self.session.aset_expiry(0)
+            assert await self.session.aget_expire_at_browser_close() is True
 
-            self.session.set_expiry(None)
-            assert self.session.get_expire_at_browser_close() is False
+            await self.session.aset_expiry(None)
+            assert await self.session.aget_expire_at_browser_close() is False
 
         with override_settings(SESSION_EXPIRE_AT_BROWSER_CLOSE=True):
-            self.session.set_expiry(10)
-            assert self.session.get_expire_at_browser_close() is False
+            await self.session.aset_expiry(10)
+            assert await self.session.aget_expire_at_browser_close() is False
 
-            self.session.set_expiry(0)
-            assert self.session.get_expire_at_browser_close() is True
+            await self.session.aset_expiry(0)
+            assert await self.session.aget_expire_at_browser_close() is True
 
-            self.session.set_expiry(None)
-            assert self.session.get_expire_at_browser_close() is True
+            await self.session.aset_expiry(None)
+            assert await self.session.aget_expire_at_browser_close() is True
 
     def test_decode(self):
         # Ensure we can decode what we encode
@@ -300,39 +304,41 @@ class SessionTestsMixin:
         # The failed decode is logged.
         assert "corrupted" in caplog.records[0].message
 
-    def test_actual_expiry(self):
+    async def test_actual_expiry(self):
         self.session = self.backend()  # reinitialize after overriding settings
 
         # Regression test for #19200
         old_session_key = None
         new_session_key = None
         try:
-            self.session["foo"] = "bar"
-            self.session.set_expiry(-timedelta(seconds=10))
-            self.session.save()
+            await self.session.aset("foo", "bar")
+            await self.session.aset_expiry(-timedelta(seconds=10))
+            await self.session.asave()
             old_session_key = self.session.session_key
             # With an expiry date in the past, the session expires instantly.
             new_session = self.backend(self.session.session_key)
             new_session_key = new_session.session_key
-            assert "foo" not in new_session
+            assert not await new_session.ahas_key("foo")
         finally:
-            self.session.delete(old_session_key)
-            self.session.delete(new_session_key)
+            await self.session.adelete(old_session_key)
+            await self.session.adelete(new_session_key)
 
-    def test_session_load_does_not_create_record(self):
+    async def test_session_load_does_not_create_record(self):
         """
         Loading an unknown session key does not create a session record.
         Creating session records on load is a DOS vulnerability.
         """
         session = self.backend("someunknownkey")
-        session.load()
+        await session.aload()
 
         assert session.session_key is None
-        assert not session.exists(session.session_key)
+        assert not await session.aexists(session.session_key)
         # provided unknown key was cycled, not reused
         assert session.session_key != "someunknownkey"
 
-    def test_session_save_does_not_resurrect_session_logged_out_in_other_context(self):
+    async def test_session_save_does_not_resurrect_session_logged_out_in_other_context(
+        self,
+    ):
         """
         Sessions shouldn't be resurrected by a concurrent request.
         """
@@ -340,45 +346,42 @@ class SessionTestsMixin:
 
         # Create new session.
         s1 = self.backend()
-        s1["test_data"] = "value1"
-        s1.save(must_create=True)
+        await s1.aset("test_data", "value1")
+        await s1.asave(must_create=True)
 
         # Logout in another context.
         s2 = self.backend(s1.session_key)
-        s2.delete()
+        await s2.adelete()
 
         # Modify session in first context.
-        s1["test_data"] = "value2"
+        await s1.aset("test_data", "value2")
         with pytest.raises(UpdateError):
             # This should throw an exception as the session is deleted, not
             # resurrect the session.
-            s1.save()
+            await s1.asave()
 
-        assert s1.load() == {}
+        assert await s1.aload() == {}
 
 
 class TestSession(SessionTestsMixin):
     backend = CacheSession
 
-    def test_load_overlong_key(self):
+    async def test_load_overlong_key(self):
         self.session._session_key = (string.ascii_letters + string.digits) * 20
-        assert self.session.load() == {}
+        assert await self.session.aload() == {}
 
-    def test_default_cache(self):
-        self.session.save()
-        assert caches["default"].get(self.session.cache_key) is not None
+    async def test_default_cache(self):
+        await self.session.asave()
+        assert await caches["default"].aget(self.session.cache_key) is not None
 
-    @pytest.mark.skipif(
-        caches["default"].client is not ValkeyCache,
-        reason="settings is set for normal server",
-    )
-    def test_non_default_cache(self, settings):
+    @pytest.mark.filterwarnings("ignore:coroutine 'AsyncBackendCommands.close'")
+    async def test_non_default_cache(self, settings):
         settings.CACHES = {
             "default": {
                 "BACKEND": "django.core.cache.backends.dummy.DummyCache",
             },
             "sessions": {
-                "BACKEND": "django_valkey.cache.ValkeyCache",
+                "BACKEND": "django_valkey.async_cache.cache.AsyncValkeyCache",
                 "LOCATION": "valkey://localhost:6379",
             },
         }
@@ -386,12 +389,12 @@ class TestSession(SessionTestsMixin):
         # Re-initialize the session backend to make use of overridden settings.
         self.session = self.backend()
 
-        self.session.save()
-        assert caches["default"].get(self.session.cache_key) is None
-        assert caches["sessions"].get(self.session.cache_key) is not None
+        await self.session.asave()
+        assert await caches["default"].aget(self.session.cache_key) is None
+        assert await caches["sessions"].get(self.session.cache_key) is not None
 
-    def test_create_and_save(self):
+    async def test_create_and_save(self):
         self.session = self.backend()
-        self.session.create()
-        self.session.save()
-        assert caches["default"].get(self.session.cache_key) is not None
+        await self.session.acreate()
+        await self.session.asave()
+        assert await caches["default"].get(self.session.cache_key) is not None

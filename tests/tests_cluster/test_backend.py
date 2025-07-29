@@ -1,5 +1,4 @@
 from collections.abc import Iterable
-from unittest.mock import patch
 
 import pytest
 from pytest_django.fixtures import SettingsWrapper
@@ -57,10 +56,10 @@ class TestDjangoValkeyCache:
         res = cache.delete_pattern("*foo-a*")
         assert bool(res) is False
 
-    @patch("django_valkey.cluster_cache.cache.ClusterValkeyCache.client")
-    def test_delete_pattern_with_custom_count(
-        self, client_mock, cache: ClusterValkeyCache
-    ):
+    def test_delete_pattern_with_custom_count(self, cache: ClusterValkeyCache, mocker):
+        client_mock = mocker.patch(
+            "django_valkey.cluster_cache.cache.ClusterValkeyCache.client"
+        )
         for key in ["foo-aa", "foo-ab", "foo-bb", "foo-bc"]:
             cache.set(key, "foo")
 
@@ -68,14 +67,16 @@ class TestDjangoValkeyCache:
 
         client_mock.delete_pattern.assert_called_once_with("*foo-a*", itersize=2)
 
-    @patch("django_valkey.cluster_cache.cache.ClusterValkeyCache.client")
     def test_delete_pattern_with_settings_default_scan_count(
         self,
-        client_mock,
         patch_itersize_setting,
         cache: ClusterValkeyCache,
         settings: SettingsWrapper,
+        mocker,
     ):
+        client_mock = mocker.patch(
+            "django_valkey.cluster_cache.cache.ClusterValkeyCache.client"
+        )
         for key in ["foo-aa", "foo-ab", "foo-bb", "foo-bc"]:
             cache.set(key, "foo")
         expected_count = settings.DJANGO_VALKEY_SCAN_ITERSIZE
