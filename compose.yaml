@@ -21,29 +21,90 @@ services:
       timeout: 5s
       retries: 5
 
-
-  cluster:
-    container_name: valkey-cluster
-    build:
-      context: .
-      dockerfile: dockers/Dockerfile.cluster
+  valkey-node-0:
+    image: bitnami/valkey-cluster:8.1
+    environment:
+      - "VALKEY_NODES=valkey-node-0 valkey-node-1 valkey-node-2 valkey-node-3 valkey-node-4 valkey-node-5"
+      - "ALLOW_EMPTY_PASSWORD=yes"
+      - "VALKEY_RDB_POLICY_DISABLED=yes"
+      - "VALKEY_AOF_ENABLED=no"
     ports:
-      - 16379:16379
-      - 16380:16380
-      - 16381:16381
-      - 16382:16382
-      - 16383:16383
-      - 16384:16384
-    volumes:
-      - "./dockers/cluster.valkey.conf:/valkey.conf:ro"
+      - 7000:6379
     profiles:
       - cluster
       - all
 
+  valkey-node-1:
+    image: bitnami/valkey-cluster:8.1
     environment:
-      - VALKEY_CLUSTER=yes
-      - NODES=6
-      - REPLICAS=1
+      - "VALKEY_NODES=valkey-node-0 valkey-node-1 valkey-node-2 valkey-node-3 valkey-node-4 valkey-node-5"
+      - "ALLOW_EMPTY_PASSWORD=yes"
+      - "VALKEY_RDB_POLICY_DISABLED=yes"
+      - "VALKEY_AOF_ENABLED=no"
+      - "VALKEY_PRIMARY_HOST=localhost"
+    ports:
+      - 7001:6379
+    profiles:
+      - cluster
+      - all
+
+  valkey-node-2:
+    image: bitnami/valkey-cluster:8.1
+    environment:
+      - "VALKEY_NODES=valkey-node-0 valkey-node-1 valkey-node-2 valkey-node-3 valkey-node-4 valkey-node-5"
+      - "ALLOW_EMPTY_PASSWORD=yes"
+      - "VALKEY_RDB_POLICY_DISABLED=yes"
+      - "VALKEY_AOF_ENABLED=no"
+    ports:
+      - 7002:6379
+    profiles:
+      - cluster
+      - all
+
+  valkey-node-3:
+    image: bitnami/valkey-cluster:8.1
+    environment:
+      - "VALKEY_NODES=valkey-node-0 valkey-node-1 valkey-node-2 valkey-node-3 valkey-node-4 valkey-node-5"
+      - "ALLOW_EMPTY_PASSWORD=yes"
+      - "VALKEY_RDB_POLICY_DISABLED=yes"
+      - "VALKEY_AOF_ENABLED=no"
+      - "VALKEY_PRIMARY_PORT_NUMBER=7002"
+      - "VALKEY_PRIMARY_HOST=localhost"
+    ports:
+      - 7003:6379
+    profiles:
+      - cluster
+      - all
+
+  valkey-node-4:
+    image: bitnami/valkey-cluster:8.1
+    environment:
+      - "VALKEY_NODES=valkey-node-0 valkey-node-1 valkey-node-2 valkey-node-3 valkey-node-4 valkey-node-5"
+      - "ALLOW_EMPTY_PASSWORD=yes"
+      - "VALKEY_RDB_POLICY_DISABLED=yes"
+      - "VALKEY_AOF_ENABLED=no"
+    ports:
+      - 7004:6379
+    profiles:
+      - cluster
+      - all
+
+  valkey-node-5:
+    image: bitnami/valkey-cluster:8.1
+    environment:
+      - "VALKEY_CLUSTER_REPLICAS=1"
+      - "VALKEY_NODES=valkey-node-0 valkey-node-1 valkey-node-2 valkey-node-3 valkey-node-4 valkey-node-5"
+      - "VALKEY_CLUSTER_CREATOR=yes"
+      - "ALLOW_EMPTY_PASSWORD=yes"
+      - "VALKEY_RDB_POLICY_DISABLED=yes"
+      - "VALKEY_AOF_ENABLED=no"
+      - "VALKEY_PRIMARY_PORT_NUMBER=7004"
+      - "VALKEY_PRIMARY_HOST=localhost"
+    ports:
+      - 7005:6379
+    profiles:
+      - cluster
+      - all
 
   sentinel:
     image: valkey/valkey:latest
