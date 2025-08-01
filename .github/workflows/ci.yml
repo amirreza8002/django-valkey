@@ -63,6 +63,7 @@ jobs:
           path: ./custom-cache/
           fail-on-cache-miss: true
           key: custom-cache
+
       - name: Use Cache
         run: docker image load -i ./custom-cache/all.tar
 
@@ -83,8 +84,10 @@ jobs:
         run: |
           uv run invoke devenv
           chmod +x ./util/wait-for-it.sh
+
           ./util/wait-for-it.sh localhost:6379
-          
+          ./util/wait-for-it.sh localhost:7000
+
           uv run pytest tests/*.py --ds=tests.settings.sqlite -x
           uv run pytest tests/*.py --ds=tests.settings.sqlite_herd -x
           uv run pytest tests/*.py --ds=tests.settings.sqlite_json -x
@@ -99,6 +102,7 @@ jobs:
           uv run pytest tests/*.py --ds=tests.settings.sqlite_bz2 -x
           uv run pytest tests/tests_async/*.py --ds=tests.settings.sqlite_async -x
           uv run pytest tests/tests_async/*.py --ds=tests.settings.sqlite_async_herd -x
+          uv run pytest tests/*.py tests/tests_cluster --ds=tests.settings.sqlite_cluster -x
 #          uv run pytest tests/*.py --ds=tests.settings.sqlite_usock -x
 
         env:
