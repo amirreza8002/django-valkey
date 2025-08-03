@@ -93,14 +93,16 @@ class DefaultClusterClient(ClientCommands, BaseClient[ValkeyCluster]):
             recovered_data[map_keys[key]] = self.decode(value)
         return recovered_data
 
+    get_many = mget_nonatomic
+
     def keyslot(self, key, version=None, client=None):
         client = self._get_client(client=client)
         key = self.make_key(key, version=version)
         return client.keyslot(key)
 
-    def flush_cache(self, client=None):
+    def flushall(self, asynchronous=False, client=None):
         client = self._get_client(client=client)
-        return client.flush_cache()
+        return client.flushall(asynchronous=asynchronous)
 
     def invalidate_key_from_cache(self, client=None):
         client = self._get_client(client=client)
