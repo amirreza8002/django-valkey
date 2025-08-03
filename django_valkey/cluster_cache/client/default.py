@@ -90,7 +90,7 @@ class DefaultClusterClient(ClientCommands, BaseClient[ValkeyCluster]):
         for key, value in zip(keys, values):
             if value is None:
                 continue
-            recovered_data[map_keys[key]] = self.decode(value)
+            recovered_data[key] = self.decode(value)
         return recovered_data
 
     get_many = mget_nonatomic
