@@ -43,6 +43,14 @@ class TestDjangoValkeyCache:
         res = cache.mget(["a{foo}", "b{foo}", "c{foo}"])
         assert res == {"a{foo}": 1, "b{foo}": 2, "c{foo}": 3}
 
+    def test_msetnx(self, cache: ClusterValkeyCache):
+        cache.mset({"a{foo}": 1, "b{foo}": 2, "c{foo}": 3})
+        res = cache.mget(["a{foo}", "b{foo}", "c{foo}"])
+        assert res == {"a{foo}": 1, "b{foo}": 2, "c{foo}": 3}
+        cache.msetnx({"a{foo}": 3, "new{foo}": 1, "other{foo}": 1})
+        res = cache.mget(["a{foo}", "new{foo}", "other{foo}"])
+        assert res == {"a{foo}": 1}
+
     def test_delete_pattern(self, cache: ClusterValkeyCache):
         for key in ["foo-aa", "foo-ab", "foo-bb", "foo-bc"]:
             cache.set(key, "foo")
@@ -147,3 +155,12 @@ class TestDjangoValkeyCache:
         cache.sadd("{foo}2", "bar2", "bar3")
         assert cache.sunionstore("{foo}3", "{foo}1", "{foo}2") == 3
         assert cache.smembers("{foo}3") == {"bar1", "bar2", "bar3"}
+
+    def test_flushall(self, cache: ClusterValkeyCache):
+        cache.set("{foo}a", 1)
+        cache.sadd("{foo}1", "bar1", "bar2")
+        cache.hset("foo_hash1", "foo1", "bar1")
+        cache.flushall()
+        assert not cache.get("{foo}a")
+        assert cache.smembers("{foo}a") == set()
+        assert not cache.hexists("foo_hash1", "foo1")
