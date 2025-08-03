@@ -6,6 +6,7 @@ nav:
 
   - configure
   - async
+  - cluster
   - commands
 
   - migration_from_django_redis.md
