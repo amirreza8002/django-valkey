@@ -1041,3 +1041,11 @@ class TestAsyncDjangoValkeyCache:
         await cache.asadd("foo2", "bar2", "bar3")
         assert await cache.asunionstore("foo3", "foo1", "foo2") == 3
         assert await cache.asmembers("foo3") == {"bar1", "bar2", "bar3"}
+
+    async def test_make_key(self, cache: AsyncValkeyCache):
+        assert cache.make_key("key", version=1, prefix="prefix") == "prefix:1:key"
+
+    async def test_make_pattern(self, cache: AsyncValkeyCache):
+        assert (
+            cache.make_pattern("key_*", version=1, prefix="prefix") == "prefix:1:key_*"
+        )

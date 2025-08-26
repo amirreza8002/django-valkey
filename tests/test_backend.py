@@ -1208,3 +1208,11 @@ class TestDjangoValkeyCache:
         cache.sadd("foo2", "bar2", "bar3")
         assert cache.sunionstore("foo3", "foo1", "foo2") == 3
         assert cache.smembers("foo3") == {"bar1", "bar2", "bar3"}
+
+    def test_make_key(self, cache: ValkeyCache):
+        assert cache.make_key("key", version=1, prefix="prefix") == "prefix:1:key"
+
+    def test_make_pattern(self, cache: ValkeyCache):
+        assert (
+            cache.make_pattern("key_*", version=1, prefix="prefix") == "prefix:1:key_*"
+        )

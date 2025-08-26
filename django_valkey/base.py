@@ -192,6 +192,12 @@ class BaseValkeyCache(Generic[Client, Backend]):
             self._client = self._client_cls(self._server, self._params, self)
         return self._client
 
+    def make_key(self, *args, **kwargs) -> bool:
+        return self.client.make_key(*args, **kwargs)
+
+    def make_pattern(self, *args, **kwargs) -> bool:
+        return self.client.make_pattern(*args, **kwargs)
+
 
 @decorate_all_methods(omit_exception)
 class BackendCommands:
