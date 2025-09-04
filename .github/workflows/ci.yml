@@ -21,7 +21,8 @@ jobs:
           mkdir -p ./custom-cache/
           docker compose --profile all build
           docker pull valkey/valkey:latest
-          docker save django-valkey-cluster:latest valkey/valkey:latest -o ./custom-cache/all.tar
+          docker pull bitnami/valkey-cluster:8.1
+          docker save bitnami/valkey-cluster valkey/valkey:latest -o ./custom-cache/all.tar
 
   test:
     runs-on: ubuntu-latest
