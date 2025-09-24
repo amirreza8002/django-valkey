@@ -108,6 +108,8 @@ DJANGO_SETTINGS_MODULE = "tests.settings.sqlite"
 plugins = ["django_coverage_plugin"]
 parallel = true
 
+[tool.codespell]
+ignore-words-list = "aadd,asend,smove"
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["E402", "F401", "F403"]
