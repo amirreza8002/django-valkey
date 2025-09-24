@@ -3,8 +3,8 @@ import contextlib
 import functools
 import inspect
 import logging
-from asyncio import iscoroutinefunction
 from collections.abc import AsyncGenerator, Callable, Iterator
+from inspect import iscoroutinefunction
 from typing import (
     Any,
     TypeVar,
