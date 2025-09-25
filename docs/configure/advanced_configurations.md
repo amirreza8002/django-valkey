@@ -255,7 +255,7 @@ the only thing you need to do is install libvalkey:
 pip install django-valkey[libvalkey]
 ```
 
-and valkey-py will take care of te rest
+and valkey-py will take care of the rest
 
 ### Use a custom parser
 

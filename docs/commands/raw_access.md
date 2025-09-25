@@ -18,7 +18,7 @@ def get_valkey_connection(alias: str="default", write: bool=True, key=None): ...
 
 `alias` is the name you gave each server in django's `CACHES` setting.
 `write` is used to determine if the operation will write to the cache database, so it should be `True` for `set` and `False` for `get`.
-`key` is only used with the shard client, it'll be explaind below.
+`key` is only used with the shard client, it'll be explained below.
 
 ### get raw access while using shard client
 **note**: this only works as of v0.3.0

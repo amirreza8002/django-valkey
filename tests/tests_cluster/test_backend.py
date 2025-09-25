@@ -13,7 +13,7 @@ from django_valkey.cluster_cache.cache import ClusterValkeyCache
 
 @pytest.fixture
 def patch_itersize_setting() -> Iterable[None]:
-    # destroy cache to force recreation with overriden settings
+    # destroy cache to force recreation with overridden settings
     del caches["default"]
     with override_settings(DJANGO_VALKEY_SCAN_ITERSIZE=30):
         yield

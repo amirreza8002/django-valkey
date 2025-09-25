@@ -19,7 +19,7 @@ CACHES = {
 
 you need to point to at least one of the cluster nodes in `LOCATION`, or pass a list of multiple nodes
 
-at the moment, only one client is avilable for cluster backend
+at the moment, only one client is available for cluster backend
 
 most of the configurations you see in [basic configuration](../configure/basic_configurations.md) and [advanced configuration](../configure/advanced_configurations.md)
 apply here as well, except the following:
@@ -27,8 +27,8 @@ apply here as well, except the following:
 
 
 ### Memcached exception behavior
-in [Memcahed exception behavior](../configure/basic_configurations.md#memcached-exception-behavior) we discussed how to ignore and log exceptitions,
-sadly, until we find a way around it, this is not accessable with cluster backend
+in [Memcached exception behavior](../configure/basic_configurations.md#memcached-exception-behavior) we discussed how to ignore and log exceptitions,
+sadly, until we find a way around it, this is not accessible with cluster backend
 
 
 ## Multi-key Commands
