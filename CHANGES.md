@@ -1,3 +1,13 @@
+Version 0.3.1
+-------------
+
+- allow access to `make_key` and `make_pattern` from backend
+- fix typos
+- update pre-commit hooks
+- add codespell
+- attend a deprecated function in testcase
+- add django 6 as supported version
+
 Version 0.3.0
 -------------
 
