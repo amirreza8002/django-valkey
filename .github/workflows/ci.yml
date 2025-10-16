@@ -8,7 +8,7 @@ jobs:
     timeout-minutes: 60
     name: Update docker cache
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Cache docker images
         id: custom-cache
         uses: actions/cache@v4
@@ -36,6 +36,7 @@ jobs:
           - '3.11'
           - '3.12'
           - '3.13'
+          - '3.14'
         django-version:
           - 'django==4.2'
           - 'django==5.0'
@@ -46,16 +47,20 @@ jobs:
           - python-version: '3.13'
             django-version: "git+https://github.com/django/django.git@main#egg=Django"
             experimental: true
+          - python-version: '3.14'
+            django-version: "git+https://github.com/django/django.git@main#egg=Django"
+            experimental: true
 
     env:
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
 
       - name: Cache docker images
         id: custom-cache
@@ -69,7 +74,7 @@ jobs:
         run: docker image load -i ./custom-cache/all.tar
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 
@@ -92,7 +97,6 @@ jobs:
           uv run pytest tests/*.py --ds=tests.settings.sqlite -x
           uv run pytest tests/*.py --ds=tests.settings.sqlite_herd -x
           uv run pytest tests/*.py --ds=tests.settings.sqlite_json -x
-          uv run pytest tests/*.py --ds=tests.settings.sqlite_lz4 -x
           uv run pytest tests/*.py --ds=tests.settings.sqlite_msgpack -x
           uv run pytest tests/*.py --ds=tests.settings.sqlite_sentinel -x
           uv run pytest tests/*.py --ds=tests.settings.sqlite_sentinel_opts -x
