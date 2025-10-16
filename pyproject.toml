@@ -84,9 +84,9 @@ ipython = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/django-utils/django-valkey"
-Source = "https://github.com/django-utils/django-valkey"
-Issues = "https://github.com/django-utils/django-valkey/issues"
+Homepage = "https://github.com/django-commons/django-valkey"
+Source = "https://github.com/django-commons/django-valkey"
+Issues = "https://github.com/django-commons/django-valkey/issues"
 Documentation = "https://django-valkey.readthedocs.io/en/latest/"
 
 
