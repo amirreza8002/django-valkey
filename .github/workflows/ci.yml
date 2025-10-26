@@ -21,7 +21,7 @@ jobs:
           mkdir -p ./custom-cache/
           docker compose --profile all build
           docker pull valkey/valkey:latest
-          docker pull bitnami/valkey-cluster:8.1
+          docker pull bitnami/valkey-cluster:9.0
           docker save bitnami/valkey-cluster valkey/valkey:latest -o ./custom-cache/all.tar
 
   test:
