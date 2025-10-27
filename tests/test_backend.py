@@ -536,6 +536,28 @@ class TestDjangoValkeyCache:
 
         assert my_value == "hello world!"
 
+    def test_decr_version(self, cache: ValkeyCache):
+        cache.set("keytest", 2, version=3)
+        res = cache.get("keytest", version=3)
+        assert res == 2
+
+        cache.decr_version("keytest", version=3)
+
+        res = cache.get("keytest", version=3)
+        assert res is None
+
+        res = cache.get("keytest", version=2)
+        assert res == 2
+
+    def test_ttl_decr_version_no_timeout(self, cache: ValkeyCache):
+        cache.set("my_key", "hello world!", version=3, timeout=None)
+
+        cache.decr_version("my_key", version=3)
+
+        my_value = cache.get("my_key", version=2)
+
+        assert my_value == "hello world!"
+
     def test_delete_pattern(self, cache: ValkeyCache):
         if isinstance(cache.client, DefaultClusterClient):
             pytest.skip("cluster client has a specific test")

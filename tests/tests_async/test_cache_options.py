@@ -30,6 +30,7 @@ methods_with_one_required_parameters = {
     "hlen",
     "incr",
     "incr_version",
+    "decr_version",
     "keys",
     "lock",
     "mget",

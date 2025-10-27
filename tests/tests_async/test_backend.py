@@ -516,6 +516,28 @@ class TestAsyncDjangoValkeyCache:
 
         assert my_value == "hello world!"
 
+    async def test_decr_version(self, cache: AsyncValkeyCache):
+        await cache.aset("keytest", 2, version=3)
+        res = await cache.aget("keytest", version=3)
+        assert res == 2
+
+        await cache.decr_version("keytest", version=3)
+
+        res = await cache.aget("keytest", version=3)
+        assert res is None
+
+        res = await cache.aget("keytest", version=2)
+        assert res == 2
+
+    async def test_ttl_decr_version_no_timeout(self, cache: AsyncValkeyCache):
+        await cache.set("my_key", "hello world!", timeout=None, version=3)
+
+        await cache.adecr_version("my_key", version=3)
+
+        my_value = await cache.get("my_key", version=2)
+
+        assert my_value == "hello world!"
+
     async def test_delete_pattern(self, cache: AsyncValkeyCache):
         for key in ["foo-aa", "foo-ab", "foo-bb", "foo-bc"]:
             await cache.aset(key, "foo")
