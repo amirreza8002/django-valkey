@@ -331,6 +331,15 @@ class ClientCommands(Generic[Backend]):
         self.delete(old_key, client=client)
         return version + delta
 
+    def decr_version(
+        self: BaseClient,
+        key: KeyT,
+        delta: int = 1,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> int:
+        return self.incr_version(key=key, delta=-delta, version=version, client=client)
+
     def _incr_version(
         self: BaseClient,
         key: KeyT,
@@ -1463,6 +1472,17 @@ class AsyncClientCommands(Generic[Backend]):
         await self.set(new_key, value, timeout=ttl, client=client)
         await self.delete(old_key, client=client)
         return version + delta
+
+    async def decr_version(
+        self: BaseClient,
+        key: KeyT,
+        delta: int = 1,
+        version: int | None = None,
+        client: Backend | Any | None = None,
+    ) -> int:
+        return await self.incr_version(
+            key=key, delta=-delta, version=version, client=client
+        )
 
     async def _incr_version(self, key, delta, version, client) -> tuple:
         if version is None:

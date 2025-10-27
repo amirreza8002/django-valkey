@@ -210,6 +210,9 @@ class BackendCommands:
     def incr_version(self: BaseValkeyCache, *args, **kwargs) -> int:
         return self.client.incr_version(*args, **kwargs)
 
+    def decr_version(self: BaseValkeyCache, *args, **kwargs) -> int:
+        return self.client.decr_version(*args, **kwargs)
+
     def add(self: BaseValkeyCache, *args, **kwargs) -> bool:
         return self.client.add(*args, **kwargs)
 
@@ -397,6 +400,9 @@ class AsyncBackendCommands:
 
     async def incr_version(self, *args, **kwargs):
         return await self.client.aincr_version(*args, **kwargs)
+
+    async def decr_version(self, *args, **kwargs):
+        return await self.client.adecr_version(*args, **kwargs)
 
     async def add(self, *args, **kwargs):
         return await self.client.aadd(*args, **kwargs)
