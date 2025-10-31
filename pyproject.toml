@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "django-valkey"
-version = "0.3.1"
+version = "0.3.2"
 description = "a valkey backend for django"
 readme = "README.rst"
 requires-python = ">=3.10"
