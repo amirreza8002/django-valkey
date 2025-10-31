@@ -1,3 +1,8 @@
+Version 0.3.2
+-------------
+
+- add `decr_version` method to be compatible with django's `BaseCache`
+
 Version 0.3.1
 -------------
 
