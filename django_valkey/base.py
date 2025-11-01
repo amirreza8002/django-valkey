@@ -32,7 +32,7 @@ ATTR_DOES_NOT_EXIST = object()
 
 def decorate_all_methods(decorator):
     def decorate(cls):
-        for attr in vars(cls):
+        for attr in dir(cls):
             # dunders and `get` should not be decorated
             # get is handled by `_get`
             if attr.startswith("__") or attr in {"get", "get_or_set"}:
