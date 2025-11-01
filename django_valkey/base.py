@@ -121,7 +121,6 @@ def omit_exception(
             else _generator_decorator
         )
 
-    wrapper.original = method
     return wrapper
 
 
