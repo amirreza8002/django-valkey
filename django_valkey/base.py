@@ -199,7 +199,6 @@ class BaseValkeyCache(Generic[Client, Backend]):
         return self.client.make_pattern(*args, **kwargs)
 
 
-@decorate_all_methods(omit_exception)
 class BackendCommands:
     def __contains__(self, item):
         return self.has_key(item)
@@ -384,7 +383,6 @@ class BackendCommands:
         return self.client.hexists(*args, **kwargs)
 
 
-@decorate_all_methods(omit_exception)
 class AsyncBackendCommands:
     def __getattr__(self, item):
         if item.startswith("a"):
