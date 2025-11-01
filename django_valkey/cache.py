@@ -1,8 +1,18 @@
 from valkey import Valkey
 
-from django_valkey.base import BaseValkeyCache, BackendCommands
+from django_valkey.base import (
+    BaseValkeyCache,
+    BackendCommands,
+    decorate_all_methods,
+    omit_exception,
+)
 from django_valkey.client import DefaultClient
 
 
-class ValkeyCache(BaseValkeyCache[DefaultClient, Valkey], BackendCommands):
+@decorate_all_methods(omit_exception)
+class DecoratedBackendCommands(BackendCommands):
+    pass
+
+
+class ValkeyCache(BaseValkeyCache[DefaultClient, Valkey], DecoratedBackendCommands):
     DEFAULT_CLIENT_CLASS = "django_valkey.client.DefaultClient"
