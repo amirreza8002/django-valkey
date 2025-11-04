@@ -1,3 +1,11 @@
+### Breaking changes
+- `BackendCommands` and `AsyncBackendCommands` are no longer decorated with `omit_exception`
+- added `DecoratedBackendCommands` and `DecoratedAsyncBackendCommands` as commands decorated with `omit_exception`
+- `AsyncValkeyCache` and `ValkeyCache` no longer inherit from `BackendCommands` and `AsyncBackendCommands`, they inherit from `DecoratedBackendCommands` and `DecoratedAsyncBackendCommands` instead
+
+### improvement
+- removed the undecorator loop from cluster client
+
 Version 0.3.2
 -------------
 
