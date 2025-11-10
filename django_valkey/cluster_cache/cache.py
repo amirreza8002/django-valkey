@@ -36,8 +36,3 @@ class ClusterValkeyCache(
     BackendCommands,
 ):
     DEFAULT_CLIENT_CLASS = "django_valkey.cluster_cache.client.DefaultClusterClient"
-
-
-for name, value in vars(BackendCommands).items():
-    if original := getattr(value, "original", None):
-        setattr(ClusterValkeyCache, name, original)
