@@ -4,12 +4,12 @@ from django_valkey.base import (
     BaseValkeyCache,
     AsyncBackendCommands,
     decorate_all_methods,
-    omit_exception,
+    omit_exception_async,
 )
 from django_valkey.async_cache.client.default import AsyncDefaultClient
 
 
-@decorate_all_methods(omit_exception)
+@decorate_all_methods(omit_exception_async)
 class DecoratedAsyncBackendCommands(AsyncBackendCommands):
     pass
 

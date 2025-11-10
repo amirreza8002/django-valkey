@@ -4,7 +4,6 @@ import functools
 import inspect
 import logging
 from collections.abc import AsyncGenerator, Callable, Iterator
-from inspect import iscoroutinefunction
 from typing import (
     Any,
     TypeVar,
@@ -91,6 +90,34 @@ def omit_exception(
         except ConnectionInterrupted as e:
             yield __handle_error(self, e)
 
+    # sync generators (iter_keys, sscan_iter) are only generator on client class
+    # in the backend they are just a function (that returns a generator)
+    # so inspect.isgeneratorfunction does not work
+    if not gen:
+        wrapper = _decorator
+
+    # if method is a generator or async generator, it should be iterated over by this decorator
+    # generators don't error by simply being called, they need to be iterated over.
+    else:
+        wrapper = _generator_decorator
+
+    return wrapper
+
+
+def omit_exception_async(
+    method: Callable | None = None, return_value: Any | None = None, gen=False
+):
+    if method is None:
+        return functools.partial(omit_exception, return_value=return_value)
+
+    def __handle_error(self, e) -> Any | None:
+        if getattr(self, "_ignore_exceptions", None):
+            if getattr(self, "_log_ignored_exceptions", None):
+                self.logger.exception("Exception ignored")
+
+            return return_value
+        raise e.__cause__
+
     @functools.wraps(method)
     async def _async_decorator(self, *args, **kwargs):
         try:
@@ -106,20 +133,12 @@ def omit_exception(
         except ConnectionInterrupted as e:
             yield __handle_error(self, e)
 
-    # sync generators (iter_keys, sscan_iter) are only generator on client class
-    # in the backend they are just a function (that returns a generator)
-    # so inspect.isgeneratorfunction does not work
-    if not inspect.isasyncgenfunction(method) and not gen:
-        wrapper = _async_decorator if iscoroutinefunction(method) else _decorator
-
-    # if method is a generator or async generator, it should be iterated over by this decorator
-    # generators don't error by simply being called, they need to be iterated over.
+    if inspect.isasyncgenfunction(method):
+        # if method is a generator or async generator, it should be iterated over by this decorator
+        # generators don't error by simply being called, they need to be iterated over.
+        wrapper = _async_generator_decorator
     else:
-        wrapper = (
-            _async_generator_decorator
-            if inspect.isasyncgenfunction(method)
-            else _generator_decorator
-        )
+        wrapper = _async_decorator
 
     return wrapper
 
