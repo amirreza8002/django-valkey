@@ -18,6 +18,10 @@ from django_valkey.client import ShardClient, herd
 from django_valkey.cluster_cache.client import DefaultClusterClient
 from django_valkey.serializers.json import JSONSerializer
 from django_valkey.serializers.msgpack import MSGPackSerializer
+from django_valkey.serializers.msgspec import (
+    MsgSpecJsonSerializer,
+    MsgSpecMsgPackSerializer,
+)
 from django_valkey.serializers.pickle import PickleSerializer
 
 
@@ -128,7 +132,15 @@ class TestDjangoValkeyCache:
         assert res == "heló"
 
     def test_save_dict(self, cache: ValkeyCache):
-        if isinstance(cache.client._serializer, (JSONSerializer, MSGPackSerializer)):
+        if isinstance(
+            cache.client._serializer,
+            (
+                JSONSerializer,
+                MSGPackSerializer,
+                MsgSpecJsonSerializer,
+                MsgSpecMsgPackSerializer,
+            ),
+        ):
             # JSONSerializer and MSGPackSerializer use the isoformat for
             # datetimes.
             now_dt: str | datetime.datetime = datetime.datetime.now().isoformat()
@@ -1099,9 +1111,17 @@ class TestDjangoValkeyCache:
         assert cache.sismember("foo", wrong_val) is False
 
     def test_sismember_complex(self, cache: ValkeyCache):
-        if isinstance(cache.client._serializer, (JSONSerializer, MSGPackSerializer)):
+        if isinstance(
+            cache.client._serializer,
+            (
+                JSONSerializer,
+                MSGPackSerializer,
+                MsgSpecJsonSerializer,
+                MsgSpecMsgPackSerializer,
+            ),
+        ):
             pytest.skip(
-                "JSONSerializer/MSGPackSerializer doesn't support the complex type"
+                "JSONSerializer/MSGPackSerializer and neither the msgspec serializers don't support the complex type"
             )
         cache.sadd("foo", 3j)
         assert cache.sismember("foo", 3j) is True

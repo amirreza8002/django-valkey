@@ -97,6 +97,8 @@ jobs:
           uv run pytest tests/*.py --ds=tests.settings.sqlite -x
           uv run pytest tests/*.py --ds=tests.settings.sqlite_herd -x
           uv run pytest tests/*.py --ds=tests.settings.sqlite_json -x
+          uv run pytest tests/*.py --ds=tests.settings.sqlite_msgspec_json -x
+          uv run pytest tests/*.py --ds=tests.settings.sqlite_msgspec_msgpack -x
           uv run pytest tests/*.py --ds=tests.settings.sqlite_msgpack -x
           uv run pytest tests/*.py --ds=tests.settings.sqlite_sentinel -x
           uv run pytest tests/*.py --ds=tests.settings.sqlite_sentinel_opts -x
