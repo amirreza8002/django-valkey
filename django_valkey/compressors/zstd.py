@@ -1,8 +1,12 @@
-import pyzstd
-
+import sys
 from django.conf import settings
 
 from django_valkey.compressors.base import BaseCompressor
+
+if sys.version_info >= (3, 14):
+    from compression import zstd
+else:
+    from backports import zstd
 
 
 class ZStdCompressor(BaseCompressor):
@@ -19,7 +23,8 @@ class ZStdCompressor(BaseCompressor):
         }
 
     compression parameters:
-    to set `level_or_option` use either `CACHE_COMPRESS_LEVEL` or `COMPRESS_ZSTD_OPTIONS` in your settings.
+    to set `level` use `CACHE_COMPRESS_LEVEL`
+    to set `options` `COMPRESS_ZSTD_OPTIONS` in your settings.
     if `COMPRESSION_ZSTD_OPTIONS` is set, level won't be used
 
     to set `minimum size` set `CACHE_COMPRESS_MIN_LENGTH` in your settings, defaults to 15.
@@ -41,15 +46,16 @@ class ZStdCompressor(BaseCompressor):
     decomp_zstd_dict = getattr(settings, "DECOMPRESS_ZSTD_DICT", None)
 
     def _compress(self, value: bytes) -> bytes:
-        return pyzstd.compress(
+        return zstd.compress(
             value,
-            level_or_option=self.options or self.level or 1,
+            options=self.options,
+            level=self.level or 1,
             zstd_dict=self.zstd_dict,
         )
 
     def _decompress(self, value: bytes) -> bytes:
-        return pyzstd.decompress(
+        return zstd.decompress(
             value,
             zstd_dict=self.decomp_zstd_dict or self.zstd_dict,
-            option=self.decomp_options or self.options,
+            options=self.decomp_options or self.options,
         )

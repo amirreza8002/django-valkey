@@ -182,16 +182,21 @@ compress_zlib_wbits = 15  # defaults to 15  (NOTE: only available in python 3.11
 
 ### Zstd compression
 
-to use zstd compression you need to have the pyzstd library installed
+as of `django-valkey` 0.4.0, the zstd library from python stdlib is used instead of `pyzstd`.
+
+if you are using python 3.14 or above, you don't need to install anything,
+otherwise, you need to install the `backports.zstd` library:
 
 ```shell
-pip install django-valkey[pyzstd]
+pip install django-valkey[zstd]
+# or
+pip install django-valkey[pyzstd]  # this is for backwards compatibility
 ```
 
-or simply
+or 
 
 ```shell
-pip install pyzstd
+pip install backports.zstd
 ```
 
 then you can configure it as such:

@@ -49,7 +49,10 @@ lz4 = [
     "lz4>=4.3.3",
 ]
 pyzstd = [
-    "pyzstd>=0.16.2",
+    "backports.zstd>=1.0.0",
+]
+zstd = [
+    "backports.zstd>=1.0.0",
 ]
 msgpack = [
     "msgpack>=1.1.0",
