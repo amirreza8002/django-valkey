@@ -1,3 +1,5 @@
+### new
+- added support for msgspec serialization (both json and msgpack)
 
 ### Breaking changes
 - `BackendCommands` and `AsyncBackendCommands` are no longer decorated with `omit_exception`.

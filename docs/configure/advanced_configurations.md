@@ -202,7 +202,12 @@ and you're good to go
 
 ### Use Msgpack serializer
 
-to use the msgpack serializer you should first install the msgpack package as explained in :ref:`msgpack`
+to use the msgpack serializer you should first install the msgpack package 
+
+```shell
+pip install django-valkey[msgpack]
+```
+
 then configure your settings like this:
 
 ```python
@@ -219,8 +224,43 @@ CACHES = {
 
 and done
 
-### Fun fact
-you can serialize every type in the python built-ins, and probably non built-ins, but you have to check which serializer supports that type.
+### Use msgspec serializers
+
+msgspec comes with two serializers, one for json, one for msgpack
+
+to use msgspec, first install the extra package:
+```shell
+pip install django-valkey[msgspec]
+```
+
+to use the json serializer, configure your backend like this:
+
+```python
+CACHES = {
+    "default": {
+        # ...
+        "OPTIONS": {
+            "SERIALIZER": "django_valkey.serializer.msgspec.MsgSpecJsonSerializer",
+            # ...
+        }
+    }
+}
+```
+
+to use the msgpack serializer, configure it like this:
+
+```python
+CACHES = {
+    "default": {
+        # ...
+        "OPTIONS": {
+            "SERIALIZER": "django_valkey.serializer.msgspec.MsgSpecMsgPackSerializer",
+            # ...
+        }
+    }
+}
+```
+
 
 ## Pluggable Compressors
 
