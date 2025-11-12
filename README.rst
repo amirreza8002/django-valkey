@@ -91,7 +91,7 @@ Install 3rd party compression
 
 .. code-block:: console
 
-    python -m pip install django-valkey[pyzstd]
+    python -m pip install django-valkey[zstd]  # not need since python 3.14
 
 .. code-block:: console
 
