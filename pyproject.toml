@@ -29,14 +29,12 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Framework :: Django :: 4.2",
-    "Framework :: Django :: 5.0",
-    "Framework :: Django :: 5.1",
     "Framework :: Django :: 5.2",
     "Framework :: Django :: 6.0"
 ]
 
 dependencies = [
-    "django>=4.2",
+    "django>=4.2,!=5.0.*,!=5.1.*",
     "valkey>=6.0.2",
 ]
 
