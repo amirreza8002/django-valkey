@@ -92,12 +92,21 @@ Install 3rd party compression
 
 .. code-block:: console
 
-    python -m pip install django-valkey[zstd]  # not need since python 3.14
+    python -m pip install django-valkey[zstd]  # not needed since python 3.14
 
 .. code-block:: console
 
     python -m pip install django-valkey[brotli]
 
+Install with 3rd party serializers
+
+.. code-block:: console
+
+   python -m pip install django-valkey[msgpack]
+
+.. code-block:: console
+
+   python -m pip install django-valkey[msgspec]
 
 
 
