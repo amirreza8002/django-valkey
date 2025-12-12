@@ -1,7 +1,13 @@
+Version 0.4.0
+-------------
+
 ### new
 - added support for msgspec serialization (both json and msgpack)
+- support django 6
+- support python 3.14
 
 ### Breaking changes
+- dropped support for django 5.0 and 5.1
 - `BackendCommands` and `AsyncBackendCommands` are no longer decorated with `omit_exception`.
 - added `omit_exception_async` to decorate async operations, instead of using `omit_exception` for both sync and async.
 - `omit_exception` no longer supports async functions and generators.
