@@ -22,6 +22,12 @@ pip install django-valkey[libvalkey]
 pip install django-valkey[msgpack]
 ```
 
+### Install with msgspec serializer:
+
+```shell
+pip install django-valkey[msgspec]
+```
+
 ## Install with 3rd party compression libraries:
 
 ### lz4 library:
@@ -30,10 +36,10 @@ pip install django-valkey[msgpack]
 pip install django-valkey[lz4]
 ``` 
 
-### pyzstd library:
+### zstd library:
 
 ```shell
-pip install django-valkey[pyzstd]
+pip install django-valkey[zstd]  # only needed before python 3.14
 ```   
 
 ### brotli library:
