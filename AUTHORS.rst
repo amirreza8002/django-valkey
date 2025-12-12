@@ -21,3 +21,4 @@ translate to valkey API:
 Amirreza Sohrabi far <https://github.com/amirreza8002>
 q0w <https://github.com/q0w>
 Christian Clauss <https://github.com/cclauss>
+Ülgen Sarıkavak https://github.com/ulgens
