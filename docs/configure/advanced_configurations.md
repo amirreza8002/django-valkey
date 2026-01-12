@@ -191,7 +191,7 @@ CACHES = {
     "default": {
         # ...
         "OPTIONS": {
-            "SERIALIZER": "django_valkey.serializer.json.JSONSerializer",
+            "SERIALIZER": "django_valkey.serializers.json.JSONSerializer",
             # ...
         }
     }
@@ -215,7 +215,7 @@ CACHES = {
     "default": {
         # ...
         "OPTIONS": {
-            "SERIALIZER": "django_valkey.serializer.msgpack.MSGPackSerializer",
+            "SERIALIZER": "django_valkey.serializers.msgpack.MSGPackSerializer",
             # ...
         }
     }
@@ -240,7 +240,7 @@ CACHES = {
     "default": {
         # ...
         "OPTIONS": {
-            "SERIALIZER": "django_valkey.serializer.msgspec.MsgSpecJsonSerializer",
+            "SERIALIZER": "django_valkey.serializers.msgspec.MsgSpecJsonSerializer",
             # ...
         }
     }
@@ -254,7 +254,7 @@ CACHES = {
     "default": {
         # ...
         "OPTIONS": {
-            "SERIALIZER": "django_valkey.serializer.msgspec.MsgSpecMsgPackSerializer",
+            "SERIALIZER": "django_valkey.serializers.msgspec.MsgSpecMsgPackSerializer",
             # ...
         }
     }
